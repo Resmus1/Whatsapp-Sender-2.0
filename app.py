@@ -1,5 +1,5 @@
 import os
-from flask import Flask, render_template, request, url_for, g
+from flask import Flask, render_template, request, url_for, g, session
 from playwright.sync_api import sync_playwright
 from utils import allowed_file, read_image, save_image, save_numbers, send_message, open_whatsapp, get_display_numbers
 from config import Config
@@ -53,11 +53,17 @@ def start():
                 for contact in g.data:
                     if contact.status == "pending":
                         send_message(contact, picture_path,
+<< << << < HEAD
                                     g.text_message, search_box, page)
 
-                g.data = get_all_users()
+
+== == == =
+                                     g.text_message, search_box, page)
+>> >>>> > a444ccc4a185b70e356bc14b64e660d35337af87
+
+                g.data= get_all_users()
                 return render_template("index.html", image_url=g.image_url,
-                                       numbers=get_display_numbers(g.data))
+                                       numbers = get_display_numbers(g.data))
 
             except Exception as e:
                 qr = "canvas[aria-label*='Scan this QR code']"
