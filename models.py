@@ -13,5 +13,5 @@ class Contact:
 
     @staticmethod
     def from_dict(data):
-        return Contact(data['phone'], data.get('name'), data.get('status', 'pending'))
+        return Contact(data['phone'], data.get('name'), data.get('status'))
 
