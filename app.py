@@ -1,22 +1,9 @@
-#!!! Разбить upload на несколько функций и добавить в них определение по файлу, мне нужно что бы загружало txt номера и jpg и выдавало статус о загрузке перенести разбитое в общие функции что бы здесь они не повторялись
-# Добавить таймер на количество попыток входа и возврат в приложение
-# Номера добавляются в базу данных и по отправки добавляются именна
-# Создание статуса отправки напротив контакта
-# Возврат к главной странице лишь с заменой статуса
-# Растояние между номерами в спике
-# Создание имен на основе имени и фамилии если нет в базе
-# Создать кнопку сброса статуса
-# Сделать табличку для контактов и галочку для рассылки возможностью добавить номер по отдельности или удалить
-# Окошко для messege сделать пошире и комфортнее
-# создать опцию выбора готовых картинок, а так же занесение их в базу данных для исключение повтора
-
 import os
 from flask import Flask, render_template, request, url_for, g
 from playwright.sync_api import sync_playwright
-from utils import allowed_file, read_image, save_image, save_numbers, send_message, open_whatsapp
+from utils import allowed_file, read_image, save_image, save_numbers, send_message, open_whatsapp, get_display_numbers
 from config import Config
-from database import get_all_data
-
+from database import get_all_users
 
 app = Flask(__name__)
 app.config.from_object(Config)
@@ -29,12 +16,13 @@ text_message = ""
 
 @app.before_request
 def before_request():
-    g.data = get_all_data()
+    g.data = get_all_users()
     g.image_url = read_image()
+
 
 @app.route("/")
 def index():
-    return render_template("index.html", message="Old data", image_url=g.image_url, numbers=[f"{item['status']}  {item['name']} - {item['phone']}" for item in g.data])
+    return render_template("index.html", message="Old data", image_url=g.image_url, numbers=get_display_numbers(g.data))
 
 
 @app.route("/start")
@@ -42,24 +30,25 @@ def start():
     with sync_playwright() as p:
         page = open_whatsapp(p)
 
-        search_button = page.get_by_role(
-            "textbox", name="Текстовое поле поиска")
-        qr = "canvas[aria-label*='Scan this QR code']"
-
         while True:
             try:
-                search_button.wait_for(timeout=15000)
+                search_box = page.get_by_role(
+                    "textbox", name="Текстовое поле поиска")
+                search_box.wait_for(timeout=15000)
                 picture_path = os.path.abspath(os.path.join(
                     app.config["UPLOAD_FOLDER"], "picture.jpg"))
-                
-                for data in g.data:
-                    if data["status"] == "pending":
-                        send_message(data, picture_path,
-                                    text_message, search_button, page)
-                g.data = get_all_data()
-                return render_template("index.html", message="SUCCESS", image_url=g.image_url, numbers=[f"{item['status']}  {item['name']} - {item['phone']}" for item in g.data])
+
+                for contact in g.data:
+                    if contact.status == "pending":
+                        send_message(contact, picture_path,
+                                     text_message, search_box, page)
+
+                g.data = get_all_users()
+                return render_template("index.html", image_url=g.image_url,
+                                       numbers=get_display_numbers(g.data))
 
             except Exception as e:
+                qr = "canvas[aria-label*='Scan this QR code']"
                 print(f"Error: {e}")
                 page.wait_for_selector(qr, timeout=15000)
                 print("The profile is not authorized, scanning the QR code is required")

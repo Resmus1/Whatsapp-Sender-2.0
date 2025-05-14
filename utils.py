@@ -2,8 +2,8 @@ import os
 import csv
 from flask import url_for, current_app
 from playwright.sync_api import Playwright, sync_playwright
-from database import add_number, get_all_data, update_name, update_status
-
+from database import add_user, get_all_users, get_users_by_status, update_status, update_name
+from models import Contact
 
 
 def allowed_file(filename):
@@ -21,24 +21,23 @@ def save_image(file):
 
 
 def save_numbers(file):
-    upload_folder = current_app.config["UPLOAD_FOLDER"]
-    csv_path = os.path.join(upload_folder, "numbers.csv")
-    file.save(csv_path)
+    path = os.path.join(current_app.config["UPLOAD_FOLDER"], "numbers.csv")
+    file.save(path)
 
-    added = 0
-    skipped = 0
-    with open(csv_path, 'r', encoding='utf-8') as f:
+    added, skipped = 0, 0
+    with open(path, 'r', encoding='utf-8') as f:
         reader = csv.reader(f)
-        next(reader)
+        next(reader, None)
         for row in reader:
-            number = row[0].strip()
-            if not number:
+            if not row or not row[0].strip():
                 continue
-            if add_number(number):
+            phone = row[0].strip()
+            contact = Contact(phone=phone)
+            if add_user(contact):
                 added += 1
             else:
                 skipped += 1
-        return f"Loaded {added} new numbers.The {skipped} already existing."
+        return f"Loaded {added} new numbers. {skipped} already existing."
 
 
 def read_image():
@@ -52,28 +51,34 @@ def read_image():
     return image_url
 
 
-def send_message(data, picture_path, text_message, search_button, page):
-    search_button.click()
-    search_button.fill(data["phone"])
-    search_button.press("Enter")
-    if data["name"] == None:
-        name = page.locator('//*[@id="main"]/header/div[2]/div/div/div/div/span').text_content()
-        update_name(data["phone"], name)
+def send_message(contact, picture_path, text_message, search_box, page):
+    search_box.click()
+    search_box.fill(contact.phone)
+    search_box.press("Enter")
+
+    if contact.name == None:
+        try:
+            name = page.locator(
+                '//*[@id="main"]/header/div[2]/div/div/div/div/span').text_content()
+            update_name(contact.phone, name)
+        except Exception as e:
+            print(f"Failed to get name for {contact.phone}: {e}")
+
     page.get_by_role("button", name="Прикрепить").click()
     page.locator("(//input[@type='file'])[2]").set_input_files(picture_path)
 
     text_field = page.get_by_role("textbox", name="Добавьте подпись")
     text_field.click()
     text_field.fill(text_message)
-    update_status(data["phone"], "sent")
+    update_status(contact.phone, "sent")
 
-    page.get_by_role("button", name="Отправить").click()
+    # page.get_by_role("button", name="Отправить").click()
+    page.wait_for_timeout(2000)
 
-    page.wait_for_timeout(3000)
 
 def open_whatsapp(playwright: Playwright):
     context = playwright.chromium.launch_persistent_context(
-        user_data_dir = "profile",
+        user_data_dir="profile",
         headless=False,
         args=[
             "--disable-application-cache",
@@ -84,3 +89,7 @@ def open_whatsapp(playwright: Playwright):
     page = context.new_page()
     page.goto("https://web.whatsapp.com/")
     return page
+
+
+def get_display_numbers(data):
+    return [f"{contact.status}  {contact.name} - {contact.phone}" for contact in data]
