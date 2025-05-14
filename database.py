@@ -14,6 +14,9 @@ def add_user(user):
 def get_all_users():
     return [Contact.from_dict(contact) for contact in db.all()]
 
+def reset_sent_statuses():
+    for contact in db.search(Contacts_db.status == 'sent'):
+        db.update({'status': 'pending'}, Contacts_db.phone == contact['phone'])
 
 
 def get_users_by_status(status):

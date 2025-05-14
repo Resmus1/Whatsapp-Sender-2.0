@@ -1,9 +1,9 @@
 import os
-from flask import Flask, render_template, request, url_for, g
+from flask import Flask, render_template, request, url_for, g, session
 from playwright.sync_api import sync_playwright
 from utils import allowed_file, read_image, save_image, save_numbers, send_message, open_whatsapp, get_display_numbers
 from config import Config
-from database import get_all_users
+from database import get_all_users, reset_sent_statuses
 
 app = Flask(__name__)
 app.config.from_object(Config)
@@ -11,13 +11,22 @@ app.config.from_object(Config)
 
 os.makedirs(app.config["UPLOAD_FOLDER"], exist_ok=True)
 
-text_message = ""
-
 
 @app.before_request
 def before_request():
+    if not g.get("data"):
+        g.data = get_all_users()
+    if not g.get("image_url"):
+        g.image_url = read_image()
+    if not g.get("text_message"):
+        g.text_message = ""
+
+
+@app.route("/reset_statuses", methods=["GET"])
+def reset_statuses():
+    reset_sent_statuses()
     g.data = get_all_users()
-    g.image_url = read_image()
+    return render_template("index.html", message="All statuses reset", image_url=g.image_url, numbers=get_display_numbers(g.data))
 
 
 @app.route("/")
@@ -38,10 +47,13 @@ def start():
                 picture_path = os.path.abspath(os.path.join(
                     app.config["UPLOAD_FOLDER"], "picture.jpg"))
 
+                if all(contact.status == "sent" for contact in g.data):
+                    return render_template("index.html", message="All messages sent", image_url=g.image_url, numbers=get_display_numbers(g.data))
+
                 for contact in g.data:
                     if contact.status == "pending":
                         send_message(contact, picture_path,
-                                     text_message, search_box, page)
+                                     g.text_message, search_box, page)
 
                 g.data = get_all_users()
                 return render_template("index.html", image_url=g.image_url,
@@ -81,9 +93,8 @@ def upload():
 
 @app.route("/text", methods=["POST"])
 def text():
-    global text_message
-    text_message = request.form.get("text")
-    return render_template("index.html", message=text_message)
+    g.text_message = request.form.get("text")
+    return render_template("index.html", message=g.text_message)
 
 
 if __name__ == "__main__":
