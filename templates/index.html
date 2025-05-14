@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% block title %}
+Главная страница
+{% endblock %}
+{% block left %}
+<form action="/start" method="get">
+    <button type="submit" class="btn btn-primary me-2">Start</button>
+</form>
+{% endblock %}
+{% block right %}
+<form action="/upload" method="post" enctype="multipart/form-data" class="d-flex align-items-center mb-3 mt-3 w-80">
+    <label class="me-auto mb-0">Upload Image</label>
+    <input type="file" name="file" class="form-control me-2 w-auto" required>
+    <button type="submit" class="btn btn-success">Загрузить</button>
+</form>
+<form action="/text" method="post" enctype="multipart/form-data" class="d-flex align-items-center mb-3 mt-3 w-80">
+    <label class="me-auto mb-0">Message</label>
+    <input type="text" name="text" class="form-control me-2 w-auto" required>
+    <button type="submit" class="btn btn-success">Загрузить</button>
+</form>
+{% endblock %}
+
+{% block picture %}
+{% if image_url %}
+<img src="{{ image_url }}" alt="Uploaded Image" style="height: 470px;">
+{% endif %}
+{% endblock %}
+{% block phone %}
+{% if numbers %}
+<ol>
+    {% for number in numbers %}
+    <li>{{ number }}</li>
+    {% endfor %}
+</ol>
+{% endif %}
+{% endblock %}

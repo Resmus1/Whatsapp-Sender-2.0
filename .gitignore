@@ -1,0 +1,6 @@
+__pycache__
+profile
+static/uploads
+testfiles
+database.json
+.gitignore
