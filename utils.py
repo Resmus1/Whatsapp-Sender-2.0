@@ -1,4 +1,5 @@
 import os
+import io
 import csv
 from flask import url_for, current_app
 from playwright.sync_api import Playwright, sync_playwright
@@ -21,23 +22,22 @@ def save_image(file):
 
 
 def save_numbers(file):
-    path = os.path.join(current_app.config["UPLOAD_FOLDER"], "numbers.csv")
-    file.save(path)
-
     added, skipped = 0, 0
-    with open(path, 'r', encoding='utf-8') as f:
-        reader = csv.reader(f)
-        next(reader, None)
-        for row in reader:
-            if not row or not row[0].strip():
-                continue
-            phone = row[0].strip()
-            contact = Contact(phone=phone)
-            if add_user(contact):
-                added += 1
-            else:
-                skipped += 1
-        return f"Loaded {added} new numbers. {skipped} already existing."
+    file_content = file.read().decode("utf-8")
+    file_io = io.StringIO(file_content)
+    reader = csv.reader(file_io)
+    next(reader, None)
+
+    for row in reader:
+        if not row or not row[0].strip():
+            continue
+        phone = row[0].strip()
+        contact = Contact(phone=phone)
+        if add_user(contact):
+            added += 1
+        else:
+            skipped += 1
+    return f"Loaded {added} new numbers. {skipped} already existing."
 
 
 def read_image():
