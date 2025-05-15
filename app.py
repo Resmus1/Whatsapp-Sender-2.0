@@ -1,4 +1,5 @@
 import os
+import atexit
 from flask import Flask, render_template, request, url_for, g
 from playwright.sync_api import sync_playwright
 from utils import allowed_file, read_image, save_image, save_numbers, send_message, open_whatsapp, get_display_numbers
@@ -20,6 +21,11 @@ def before_request():
         g.image_url = read_image()
     if not g.get("text_message"):
         g.text_message = ""
+
+
+@atexit.register
+def on_exit():
+    reset_sent_statuses()
 
 
 @app.route("/reset_statuses", methods=["GET"])
@@ -73,28 +79,24 @@ def start():
 def upload():
     upload_file = request.files.get("file")
 
-    if not upload_file or not upload_file.filename:
-        return render_template("index.html", message="No file selected.")
-
-    is_allowed, ext = allowed_file(upload_file.filename)
-    if not is_allowed:
-        return render_template("index.html", message="Wrong file type.")
+    ext = allowed_file(upload_file.filename)
 
     if ext == 'jpg':
-        image_url = save_image(upload_file)
-        return render_template("index.html", message="Image uploaded.", image_url=image_url)
+        g.image_url = save_image(upload_file)
+        return render_template("index.html", message="Image uploaded.", image_url=g.image_url, numbers=get_display_numbers(g.data))
 
     elif ext == "csv":
         status_numbers = save_numbers(upload_file)
-        return render_template("index.html", message=status_numbers,)
+        return render_template("index.html", message=status_numbers, image_url=g.image_url, numbers=get_display_numbers(g.data))
 
-    return render_template("index.html", message="Unknown error when loading.")
+    else:
+        return render_template("index.html", message="Error: Wrong file type.", image_url=g.image_url, numbers=get_display_numbers(g.data))
 
 
 @app.route("/text", methods=["POST"])
 def text():
     g.text_message = request.form.get("text")
-    return render_template("index.html", message=g.text_message)
+    return render_template("index.html", message=f"{g.text_message}", text_message=g.text_message, image_url=g.image_url, numbers=get_display_numbers(g.data))
 
 
 if __name__ == "__main__":

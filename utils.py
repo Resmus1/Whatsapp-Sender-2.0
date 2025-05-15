@@ -9,8 +9,7 @@ from models import Contact
 
 def allowed_file(filename):
     ext = filename.rsplit('.', 1)[-1].lower()
-    allowed = current_app.config["ALLOWED_EXTENSIONS"]
-    return ext in allowed, ext
+    return ext
 
 
 def save_image(file):
@@ -41,14 +40,9 @@ def save_numbers(file):
 
 
 def read_image():
-    image_url = None
     upload_folder = current_app.config["UPLOAD_FOLDER"]
     image_path = os.path.join(upload_folder, "picture.jpg")
-
-    if os.path.exists(image_path):
-        image_url = url_for("static", filename=f"uploads/picture.jpg")
-
-    return image_url
+    return url_for("static", filename="uploads/picture.jpg") if os.path.exists(image_path) else None
 
 
 def send_message(contact, picture_path, text_message, search_box, page):
