@@ -55,8 +55,9 @@ def send_message(contact, picture_path, text_message, search_box, page):
             name = page.locator(
                 '//*[@id="main"]/header/div[2]/div/div/div/div/span').text_content()
             update_name(contact.phone, name)
-        except Exception as e:
-            print(f"Failed to get name for {contact.phone}: {e}")
+        except:
+            update_status(contact.phone, "error")
+            return False
 
     page.get_by_role("button", name="Прикрепить").click()
     page.locator("(//input[@type='file'])[2]").set_input_files(picture_path)
@@ -67,7 +68,7 @@ def send_message(contact, picture_path, text_message, search_box, page):
     update_status(contact.phone, "sent")
 
     # page.get_by_role("button", name="Отправить").click()
-    page.wait_for_timeout(2000)
+    page.wait_for_timeout(1000)
 
 
 def open_whatsapp(playwright: Playwright):

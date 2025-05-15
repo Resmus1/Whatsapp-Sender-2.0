@@ -1,5 +1,6 @@
 import os
 import atexit
+from collections import Counter
 from flask import Flask, render_template, request, url_for, g
 from playwright.sync_api import sync_playwright
 from utils import allowed_file, read_image, save_image, save_numbers, send_message, open_whatsapp, get_display_numbers
@@ -56,14 +57,16 @@ def start():
                 if all(contact.status == "sent" for contact in g.data):
                     return render_template("index.html", message="All messages sent", image_url=g.image_url, numbers=get_display_numbers(g.data))
 
-                for contact in g.data:
+                for contact in g.data[:3]:
                     if contact.status == "pending":
                         send_message(contact, picture_path,
                                      g.text_message, search_box, page)
 
                 g.data = get_all_users()
-                return render_template("index.html", image_url=g.image_url,
-                                       numbers=get_display_numbers(g.data))
+                statuses = Counter([contact.status for contact in g.data])
+                print(statuses)
+                return render_template("index.html", message="Done", image_url=g.image_url,
+                                       numbers=get_display_numbers(g.data), **statuses)
 
             except Exception as e:
                 qr = "canvas[aria-label*='Scan this QR code']"

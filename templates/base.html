@@ -23,7 +23,16 @@
             <div class="bg-body-tertiary border rounded-3 p-3" style="height: 300px;">
                 <span>Menu</span>
                 {% block left %}{% endblock %}
-                <span>{{ message }}</span>
+                <p>{{ message }}</p>
+                {% if sent %}
+                <p>Sent: {{ sent }}</p>
+                {% endif %}
+                {% if pending %}
+                <p>Pending: {{ pending }}</p>
+                {% endif %}
+                {% if error %}
+                <p>Error: {{ error }}</p>
+                {% endif %}
             </div>
             <div class="bg-body-tertiary border rounded-3 p-3" style="height: 300px;">
                 <span>Settings</span>
