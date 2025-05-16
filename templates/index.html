@@ -6,6 +6,19 @@
 <form action="/start" method="get">
     <button type="submit" class="btn btn-primary me-2">Start</button>
 </form>
+<p>{{ message }}</p>
+{% if sent %}
+<p>Sent: {{ sent }}</p>
+{% endif %}
+{% if pending %}
+<p>Pending: {{ pending }}</p>
+{% endif %}
+{% if error %}
+<p>Error: {{ error }}</p>
+{% endif %}
+{% if sent_message %}
+{{ sent_message }}
+{% endif %}
 {% endblock %}
 {% block right %}
 <form action="/upload" method="post" enctype="multipart/form-data" class="d-flex align-items-center mb-3 mt-3 w-80">

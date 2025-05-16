@@ -19,11 +19,6 @@ def reset_sent_statuses():
         db.update({'status': 'pending'}, Contacts_db.phone == contact['phone'])
 
 
-def get_users_by_status(status):
-    users_data = db.search(Contacts_db.status == status)
-    return [Contact.from_dict(user) for user in users_data]
-
-
 def update_status(phone, new_status):
     db.update({'status': new_status}, Contacts_db.phone == phone)
 

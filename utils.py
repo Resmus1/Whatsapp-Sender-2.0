@@ -3,7 +3,7 @@ import io
 import csv
 from flask import url_for, current_app
 from playwright.sync_api import Playwright, sync_playwright
-from database import add_user, get_all_users, get_users_by_status, update_status, update_name
+from database import add_user, update_status, update_name
 from models import Contact
 
 

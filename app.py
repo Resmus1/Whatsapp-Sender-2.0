@@ -1,7 +1,7 @@
 import os
 import atexit
 from collections import Counter
-from flask import Flask, render_template, request, url_for, g
+from flask import Flask, render_template, request, url_for, g, session
 from playwright.sync_api import sync_playwright
 from utils import allowed_file, read_image, save_image, save_numbers, send_message, open_whatsapp, get_display_numbers
 from config import Config
@@ -20,8 +20,10 @@ def before_request():
         g.data = get_all_users()
     if not g.get("image_url"):
         g.image_url = read_image()
-    if not g.get("text_message"):
-        g.text_message = ""
+    if "text_message" not in session:
+        session["text_message"] = ""
+    if "statuses" not in session:
+        session["statuses"] = Counter([contact.status for contact in g.data])
 
 
 @atexit.register
@@ -33,12 +35,13 @@ def on_exit():
 def reset_statuses():
     reset_sent_statuses()
     g.data = get_all_users()
-    return render_template("index.html", message="All statuses reset", image_url=g.image_url, numbers=get_display_numbers(g.data))
+    session.pop("text_message", None)
+    return render_template("index.html", message="Reset statuses and message", image_url=g.image_url, numbers=get_display_numbers(g.data))
 
 
 @app.route("/")
 def index():
-    return render_template("index.html", message="Old data", image_url=g.image_url, numbers=get_display_numbers(g.data))
+    return render_template("index.html", message="Last session:", sent_message=session["text_message"], **session["statuses"], image_url=g.image_url, numbers=get_display_numbers(g.data))
 
 
 @app.route("/start")
@@ -55,18 +58,17 @@ def start():
                     app.config["UPLOAD_FOLDER"], "picture.jpg"))
 
                 if all(contact.status == "sent" for contact in g.data):
-                    return render_template("index.html", message="All messages sent", image_url=g.image_url, numbers=get_display_numbers(g.data))
+                    return render_template("index.html", message="All messages sent", sent_message=session["text_message"], image_url=g.image_url, numbers=get_display_numbers(g.data))
 
                 for contact in g.data[:3]:
                     if contact.status == "pending":
                         send_message(contact, picture_path,
-                                     g.text_message, search_box, page)
+                                     session["text_message"], search_box, page)
 
                 g.data = get_all_users()
-                statuses = Counter([contact.status for contact in g.data])
-                print(statuses)
-                return render_template("index.html", message="Done", image_url=g.image_url,
-                                       numbers=get_display_numbers(g.data), **statuses)
+                session["statuses"] = Counter([contact.status for contact in g.data])
+                return render_template("index.html", message="Done", sent_message=session["text_message"], image_url=g.image_url,
+                                       numbers=get_display_numbers(g.data), **session["statuses"])
 
             except Exception as e:
                 qr = "canvas[aria-label*='Scan this QR code']"
@@ -86,20 +88,20 @@ def upload():
 
     if ext == 'jpg':
         g.image_url = save_image(upload_file)
-        return render_template("index.html", message="Image uploaded.", image_url=g.image_url, numbers=get_display_numbers(g.data))
+        return render_template("index.html", message="Image uploaded.", sent_message=session["text_message"], image_url=g.image_url, numbers=get_display_numbers(g.data))
 
     elif ext == "csv":
         status_numbers = save_numbers(upload_file)
-        return render_template("index.html", message=status_numbers, image_url=g.image_url, numbers=get_display_numbers(g.data))
+        return render_template("index.html", message=status_numbers, sent_message=session["text_message"], image_url=g.image_url, numbers=get_display_numbers(g.data))
 
     else:
-        return render_template("index.html", message="Error: Wrong file type.", image_url=g.image_url, numbers=get_display_numbers(g.data))
+        return render_template("index.html", message="Error: Wrong file type.", sent_message=session["text_message"], image_url=g.image_url, numbers=get_display_numbers(g.data))
 
 
 @app.route("/text", methods=["POST"])
 def text():
-    g.text_message = request.form.get("text")
-    return render_template("index.html", message=f"{g.text_message}", text_message=g.text_message, image_url=g.image_url, numbers=get_display_numbers(g.data))
+    session["text_message"] = request.form.get("text")
+    return render_template("index.html", message=f"New message: {session["text_message"]}", image_url=g.image_url, numbers=get_display_numbers(g.data))
 
 
 if __name__ == "__main__":
