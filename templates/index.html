@@ -2,45 +2,69 @@
 {% block title %}
 Главная страница
 {% endblock %}
+
 {% block left %}
 <form action="/start" method="get">
     <button type="submit" class="btn btn-primary me-2">Start</button>
 </form>
+
 <p>{{ message }}</p>
+
 {% if sent %}
 <p>Sent: {{ sent }}</p>
 {% endif %}
+
 {% if pending %}
 <p>Pending: {{ pending }}</p>
 {% endif %}
+
 {% if error %}
 <p>Error: {{ error }}</p>
 {% endif %}
+
 {% if sent_message %}
-{{ sent_message }}
+<p>{{ sent_message }}</p>
 {% endif %}
 {% endblock %}
+
 {% block right %}
 <form action="/upload" method="post" enctype="multipart/form-data" class="d-flex align-items-center mb-3 mt-3 w-80">
     <label class="me-auto mb-0">Upload Image</label>
     <input type="file" name="file" class="form-control me-2 w-auto" required>
     <button type="submit" class="btn btn-success">Загрузить</button>
 </form>
-<form action="/text" method="post" enctype="multipart/form-data" class="d-flex align-items-center mb-3 mt-3 w-80">
+
+<form action="/text" method="post" class="d-flex align-items-center mb-3 mt-3 w-80">
     <label class="me-auto mb-0">Message</label>
     <input type="text" name="text" class="form-control me-2 w-auto" required>
     <button type="submit" class="btn btn-success">Загрузить</button>
 </form>
+
 <form action="/reset_statuses" method="get">
     <button type="submit" class="btn btn-danger">Reset</button>
+</form>
+
+<h2>Выбери категорию:</h2>
+<form action="/" method="post" id="categoryForm">
+    <select name="category" id="categorySelect" required onchange="document.getElementById('categoryForm').submit()">
+        <option value="">-- выбери --</option>
+        {% for cat in categories %}
+        <option value="{{ cat }}" {% if cat == selected_category %}selected{% endif %}>{{ cat }}</option>
+        {% endfor %}
+    </select>
 </form>
 {% endblock %}
 
 {% block picture %}
 {% if image_url %}
 <img src="{{ image_url }}" alt="Uploaded Image" style="height: 470px;">
+<form action="/next" method="get">
+    <button type="submit" class="btn btn-primary mt-2">Next</button>
+</form>
 {% endif %}
+<div id="results"></div>
 {% endblock %}
+
 {% block phone %}
 {% if numbers %}
 <ol>

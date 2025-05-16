@@ -1,13 +1,14 @@
 import os
 import io
 import csv
+import requests
 from flask import url_for, current_app
 from playwright.sync_api import Playwright, sync_playwright
-from database import add_user, update_status, update_name
-from models import Contact
+from database import add_user, update_status, update_name, add_image
+from models import Contact, Image
 
 
-def allowed_file(filename):
+def get_file_extension(filename):
     ext = filename.rsplit('.', 1)[-1].lower()
     return ext
 
@@ -19,6 +20,33 @@ def save_image(file):
     file.save(image_path)
     return url_for("static", filename=f"uploads/{image_filename}")
 
+
+def save_image_from_url(image_url):
+    upload_folder = current_app.config["UPLOAD_FOLDER"]
+    image_filename = "picture.jpg"
+    image_path = os.path.join(upload_folder, image_filename)
+    response = requests.get(image_url)
+    if response.status_code == 200:
+        with open(image_path, "wb") as f:
+            f.write(response.content)
+    else:
+        raise Exception(f"Не удалось скачать изображение: HTTP {response.status_code}")
+
+    return url_for("static", filename=f"uploads/{image_filename}")
+
+def save_images(file):
+    added, skipped = 0, 0
+    file_content = file.read().decode("utf-8")
+    file_io = io.StringIO(file_content)
+    for row in file_io:
+        if not row.startswith("http"):
+            continue
+        image = Image(url=row.strip())
+        if add_image(image):
+            added += 1
+        else:
+            skipped += 1
+    return f"Loaded {added} new images. {skipped} already existing."
 
 def save_numbers(file):
     added, skipped = 0, 0
@@ -65,10 +93,10 @@ def send_message(contact, picture_path, text_message, search_box, page):
     text_field = page.get_by_role("textbox", name="Добавьте подпись")
     text_field.click()
     text_field.fill(text_message)
-    update_status(contact.phone, "sent")
 
     # page.get_by_role("button", name="Отправить").click()
     page.wait_for_timeout(1000)
+    update_status(contact.phone, "sent")
 
 
 def open_whatsapp(playwright: Playwright):
@@ -87,4 +115,4 @@ def open_whatsapp(playwright: Playwright):
 
 
 def get_display_numbers(data):
-    return [f"{contact.status}  {contact.name} - {contact.phone}" for contact in data]
+    return [f"[{contact.status.upper()}] {contact.name or 'Без имени'} - {contact.phone}" for contact in data]
