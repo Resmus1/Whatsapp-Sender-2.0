@@ -3,8 +3,8 @@ import io
 import csv
 from flask import url_for, current_app
 from playwright.sync_api import Playwright, sync_playwright
-from database import add_user, update_status, update_name
-from models import Contact
+from database import add_user, update_status, update_name, add_image
+from models import Contact, Image
 
 
 def allowed_file(filename):
@@ -19,6 +19,19 @@ def save_image(file):
     file.save(image_path)
     return url_for("static", filename=f"uploads/{image_filename}")
 
+def save_images(file):
+    added, skipped = 0, 0
+    file_content = file.read().decode("utf-8")
+    file_io = io.StringIO(file_content)
+    for row in file_io:
+        if not row:
+            continue
+        image = Image(url=row.strip())
+        if add_image(image):
+            added += 1
+        else:
+            skipped += 1
+    return f"Loaded {added} new images. {skipped} already existing."
 
 def save_numbers(file):
     added, skipped = 0, 0

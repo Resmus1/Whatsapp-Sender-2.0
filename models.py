@@ -13,5 +13,21 @@ class Contact:
 
     @staticmethod
     def from_dict(data):
-        return Contact(data['phone'], data.get('name'), data.get('status'))
+        return Contact(data['phone'], data.get('name'), data['status'])
 
+
+class Image:
+    def __init__(self, url, category=None):
+        self.url = url
+        self.category = category
+
+
+    def to_dict(self):
+        return {
+            'url': self.url,
+            'category': self.category,
+        }
+    
+    @staticmethod
+    def from_dict(data):
+        return Image(data['url'], data.get('category'))
