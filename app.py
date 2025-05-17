@@ -57,8 +57,8 @@ def index():
     images = get_images_by_category(
         selected_category) if selected_category else []
     image_url = None
-    if images and 0 <= current_index < len(images):
-        image_url = images[current_index].url
+    if images:
+        image_url = random.choice(images).url
         utils.save_image_from_url(image_url)
 
     return render_template(

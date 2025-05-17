@@ -17,7 +17,7 @@ class Contact:
 
 
 class Image:
-    def __init__(self, url, category=None):
+    def __init__(self, url, category):
         self.url = url
         self.category = category
 

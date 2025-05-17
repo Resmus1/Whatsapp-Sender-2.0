@@ -36,12 +36,14 @@ def save_image_from_url(image_url):
 
 def save_images(file):
     added, skipped = 0, 0
+    category_name = os.path.basename(file.filename).split('.')[0]
+    print(category_name)
     file_content = file.read().decode("utf-8")
     file_io = io.StringIO(file_content)
     for row in file_io:
         if not row.startswith("http"):
             continue
-        image = Image(url=row.strip())
+        image = Image(url=row.strip(), category=category_name)
         if add_image(image):
             added += 1
         else:
