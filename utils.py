@@ -1,16 +1,26 @@
 import os
 import io
-import csv
 import requests
-from flask import url_for, current_app, redirect
+from flask import url_for, current_app, redirect, session
 from playwright.sync_api import Playwright, sync_playwright
 from database import add_user, update_status, update_name, add_image
 from models import Contact, Image
 
 
-def get_file_extension(filename):
-    ext = filename.rsplit('.', 1)[-1].lower()
-    return ext
+def file_processing(file):
+    ext = file.filename.rsplit('.')[-1].lower()
+    if ext == "txt":
+        file_name = os.path.basename(file.filename).split('.')[0]
+        file_content = file.read().decode("utf-8")
+        file_content = [row.strip()
+                        for row in file_content.split('\n') if row.strip()]
+        if all(row.isdigit() for row in file_content):
+            status = save_numbers(file_content)
+        if all(row.startswith("http") for row in file_content):
+            status = save_images(file_content, file_name)
+    if ext == "jpg":
+        status = save_image(file)
+    return ext, status
 
 
 def save_image(file):
@@ -18,7 +28,9 @@ def save_image(file):
     image_filename = "picture.jpg"
     image_path = os.path.join(upload_folder, image_filename)
     file.save(image_path)
-    return url_for("static", filename=f"uploads/{image_filename}")
+    session["image_path"] = url_for(
+        "static", filename=f"uploads/{image_filename}")
+    return "Image uploaded."
 
 
 def save_image_from_url(image_url):
@@ -36,16 +48,10 @@ def save_image_from_url(image_url):
     return url_for("static", filename=f"uploads/{image_filename}")
 
 
-def save_images(file):
+def save_images(file_content, file_name):
     added, skipped = 0, 0
-    category_name = os.path.basename(file.filename).split('.')[0]
-    print(category_name)
-    file_content = file.read().decode("utf-8")
-    file_io = io.StringIO(file_content)
-    for row in file_io:
-        if not row.startswith("http"):
-            continue
-        image = Image(url=row.strip(), category=category_name)
+    for link_image in file_content:
+        image = Image(url=link_image.strip(), category=file_name)
         if add_image(image):
             added += 1
         else:
@@ -53,22 +59,16 @@ def save_images(file):
     return f"Loaded {added} new images. {skipped} already existing."
 
 
-def save_numbers(file):
+def save_numbers(numbers):
     added, skipped = 0, 0
-    file_content = file.read().decode("utf-8")
-    file_io = io.StringIO(file_content)
-    reader = csv.reader(file_io)
-    next(reader, None)
 
-    for row in reader:
-        if not row or not row[0].strip():
-            continue
-        phone = row[0].strip()
-        contact = Contact(phone=phone)
+    for phone_number in numbers:
+        contact = Contact(phone=phone_number)
         if add_user(contact):
             added += 1
         else:
             skipped += 1
+
     return f"Loaded {added} new numbers. {skipped} already existing."
 
 

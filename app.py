@@ -40,11 +40,13 @@ def reset_statuses():
     g.data = get_all_users()
     session.pop("text_message", None)
     session.pop("image_path", None)
-    return render_template("index.html", message="Reset statuses and message", numbers=utils.get_display_numbers(g.data))
+    # return render_template("index.html", message="Reset statuses and message", numbers=utils.get_display_numbers(g.data))
+    return redirect(url_for('index', message="Reset statuses and message"))
 
 
 @app.route('/', methods=['GET', 'POST'])
 def index():
+    message = request.args.get("message")
     image_path = utils.read_image()
     categories = get_image_categories()
     selected_category = session.get('selected_category')
@@ -55,11 +57,6 @@ def index():
         session['selected_category'] = selected_category
         session['current_index'] = 0
         current_index = 0
-<<<<<<< HEAD
-        print(session['selected_category'])
-        print(session['current_index'])
-        print(current_index)
-=======
 
     images = get_images_by_category(
         selected_category) if selected_category else []
@@ -67,11 +64,11 @@ def index():
     if images:
         image_url = random.choice(images).url
         utils.save_image_from_url(image_url)
->>>>>>> 49987868c3d709cd2da60c9531fdec58e00c423f
 
     return render_template(
         'index.html',
         categories=categories,
+        message=message,
         selected_category=selected_category,
         image_url=session["image_path"] or image_path,
         current_index=current_index,
@@ -106,8 +103,7 @@ def start():
                 g.data = get_all_users()
                 session["statuses"] = Counter(
                     [contact.status for contact in g.data])
-                return render_template("index.html", message="Done", sent_message=session["text_message"], image_url=session["image_path"],
-                                       numbers=utils.get_display_numbers(g.data), **session["statuses"])
+                return(redirect(url_for('index', message="Messages sent", **session["statuses"])))
 
             except Exception as e:
                 qr = "canvas[aria-label*='Scan this QR code']"
@@ -116,35 +112,22 @@ def start():
                 print("The profile is not authorized, scanning the QR code is required")
                 page.wait_for_timeout(10000)
 
-    return render_template("index.html", message="Unknown error")
+    return redirect("index.html", message="Unknown error")
 
 
 @app.route("/upload", methods=["POST"])
 def upload():
     upload_file = request.files.get("file")
 
-    ext = utils.get_file_extension(upload_file.filename)
-
-    if ext == 'jpg':
-        session["image_path"] = utils.save_image(upload_file)
-        return render_template("index.html", message="Image uploaded.", sent_message=session["text_message"], image_url=session["image_path"], numbers=utils.get_display_numbers(g.data))
-
-    elif ext == "csv":
-        status_numbers = utils.save_numbers(upload_file)
-        return render_template("index.html", message=status_numbers, sent_message=session["text_message"], image_url=session["image_path"], numbers=utils.get_display_numbers(g.data))
-
-    elif ext == "txt":
-        status_images = utils.save_images(upload_file)
-        return render_template("index.html", message=status_images, sent_message=session["text_message"], image_url=session["image_path"], numbers=utils.get_display_numbers(g.data))
-
-    else:
-        return render_template("index.html", message="Error: Wrong file type.", sent_message=session["text_message"], image_url=session["image_path"], numbers=utils.get_display_numbers(g.data))
+    ext, status = utils.file_processing(upload_file)
+    print(f"File extension: {ext}")
+    return redirect(url_for('index', message=status))
 
 
 @app.route("/text", methods=["POST"])
 def text():
     session["text_message"] = request.form.get("text")
-    return render_template("index.html", message=f"New message: {session["text_message"]}", image_url=session["image_path"], numbers=utils.get_display_numbers(g.data))
+    return redirect(url_for('index', message=f"New message: {session["text_message"]}"))
 
 
 @app.route('/next')
