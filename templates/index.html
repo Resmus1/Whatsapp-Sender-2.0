@@ -58,10 +58,15 @@
 {% block picture %}
 {% if image_url %}
 <img src="{{ image_url }}" alt="Uploaded Image" style="height: 470px;">
+{% endif %}
 <form action="/next" method="get">
     <button type="submit" class="btn btn-primary mt-2">Next</button>
 </form>
-{% endif %}
+
+<form action="/delete_image" method="get">
+    <button type="submit" class="btn btn-danger">Delete</button>
+</form>
+
 <div id="results"></div>
 {% endblock %}
 

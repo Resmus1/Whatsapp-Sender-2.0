@@ -19,8 +19,8 @@ os.makedirs(app.config["UPLOAD_FOLDER"], exist_ok=True)
 def before_request():
     if not g.get("data"):
         g.data = get_all_users()
-    if not g.get("image_url"):
-        g.image_url = utils.read_image()
+    if "image_path" not in session:
+        session["image_path"] = None
     if "text_message" not in session:
         session["text_message"] = ""
     if "statuses" not in session:
@@ -39,11 +39,13 @@ def reset_statuses():
     reset_sent_statuses()
     g.data = get_all_users()
     session.pop("text_message", None)
-    return render_template("index.html", message="Reset statuses and message", image_url=g.image_url, numbers=utils.get_display_numbers(g.data))
+    session.pop("image_path", None)
+    return render_template("index.html", message="Reset statuses and message", numbers=utils.get_display_numbers(g.data))
 
 
 @app.route('/', methods=['GET', 'POST'])
 def index():
+    image_path = utils.read_image()
     categories = get_image_categories()
     selected_category = session.get('selected_category')
     current_index = session.get('current_index', 0)
@@ -53,21 +55,17 @@ def index():
         session['selected_category'] = selected_category
         session['current_index'] = 0
         current_index = 0
-
-    images = get_images_by_category(
-        selected_category) if selected_category else []
-    image_url = None
-    if images and 0 <= current_index < len(images):
-        image_url = images[current_index].url
-        utils.save_image_from_url(image_url)
+        print(session['selected_category'])
+        print(session['current_index'])
+        print(current_index)
 
     return render_template(
         'index.html',
         categories=categories,
         selected_category=selected_category,
-        image_url=image_url,
+        image_url=session["image_path"] or image_path,
         current_index=current_index,
-        total_images=len(images),
+        # total_images=len(images),
         sent_message=session["text_message"],
         numbers=utils.get_display_numbers(g.data),
         **session["statuses"]
@@ -88,7 +86,7 @@ def start():
                     app.config["UPLOAD_FOLDER"], "picture.jpg"))
 
                 if all(contact.status == "sent" for contact in g.data):
-                    return render_template("index.html", message="All messages sent", sent_message=session["text_message"], image_url=g.image_url, numbers=utils.get_display_numbers(g.data))
+                    return render_template("index.html", message="All messages sent", sent_message=session["text_message"], image_url=session["image_path"], numbers=utils.get_display_numbers(g.data))
 
                 for contact in g.data[:3]:
                     if contact.status == "pending":
@@ -98,7 +96,7 @@ def start():
                 g.data = get_all_users()
                 session["statuses"] = Counter(
                     [contact.status for contact in g.data])
-                return render_template("index.html", message="Done", sent_message=session["text_message"], image_url=g.image_url,
+                return render_template("index.html", message="Done", sent_message=session["text_message"], image_url=session["image_path"],
                                        numbers=utils.get_display_numbers(g.data), **session["statuses"])
 
             except Exception as e:
@@ -118,38 +116,46 @@ def upload():
     ext = utils.get_file_extension(upload_file.filename)
 
     if ext == 'jpg':
-        g.image_url = utils.save_image(upload_file)
-        return render_template("index.html", message="Image uploaded.", sent_message=session["text_message"], image_url=g.image_url, numbers=utils.get_display_numbers(g.data))
+        session["image_path"] = utils.save_image(upload_file)
+        return render_template("index.html", message="Image uploaded.", sent_message=session["text_message"], image_url=session["image_path"], numbers=utils.get_display_numbers(g.data))
 
     elif ext == "csv":
         status_numbers = utils.save_numbers(upload_file)
-        return render_template("index.html", message=status_numbers, sent_message=session["text_message"], image_url=g.image_url, numbers=utils.get_display_numbers(g.data))
+        return render_template("index.html", message=status_numbers, sent_message=session["text_message"], image_url=session["image_path"], numbers=utils.get_display_numbers(g.data))
 
     elif ext == "txt":
         status_images = utils.save_images(upload_file)
-        return render_template("index.html", message=status_images, sent_message=session["text_message"], image_url=g.image_url, numbers=utils.get_display_numbers(g.data))
+        return render_template("index.html", message=status_images, sent_message=session["text_message"], image_url=session["image_path"], numbers=utils.get_display_numbers(g.data))
 
     else:
-        return render_template("index.html", message="Error: Wrong file type.", sent_message=session["text_message"], image_url=g.image_url, numbers=utils.get_display_numbers(g.data))
+        return render_template("index.html", message="Error: Wrong file type.", sent_message=session["text_message"], image_url=session["image_path"], numbers=utils.get_display_numbers(g.data))
 
 
 @app.route("/text", methods=["POST"])
 def text():
     session["text_message"] = request.form.get("text")
-    return render_template("index.html", message=f"New message: {session["text_message"]}", image_url=g.image_url, numbers=utils.get_display_numbers(g.data))
+    return render_template("index.html", message=f"New message: {session["text_message"]}", image_url=session["image_path"], numbers=utils.get_display_numbers(g.data))
 
 
 @app.route('/next')
 def next_image():
     selected_category = session.get('selected_category')
-    current_index = session.get('current_index', 0)
+    current_index = session.get('current_index')
 
     images = get_images_by_category(
         selected_category) if selected_category else []
     if images:
-        current_index = (current_index + 1) % len(images)
+        current_index = random.randint(0, len(images) - 1)
         session['current_index'] = current_index
+        session["image_path"] = images[current_index].url
+        utils.save_image_from_url(session["image_path"])
+    return redirect(url_for('index'))
 
+
+@app.route('/delete_image')
+def delete_image():
+    session["image_path"] = None
+    utils.delete_image()
     return redirect(url_for('index'))
 
 

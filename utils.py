@@ -2,7 +2,7 @@ import os
 import io
 import csv
 import requests
-from flask import url_for, current_app
+from flask import url_for, current_app, redirect
 from playwright.sync_api import Playwright, sync_playwright
 from database import add_user, update_status, update_name, add_image
 from models import Contact, Image
@@ -30,23 +30,28 @@ def save_image_from_url(image_url):
         with open(image_path, "wb") as f:
             f.write(response.content)
     else:
-        raise Exception(f"Не удалось скачать изображение: HTTP {response.status_code}")
+        raise Exception(
+            f"Не удалось скачать изображение: HTTP {response.status_code}")
 
     return url_for("static", filename=f"uploads/{image_filename}")
 
+
 def save_images(file):
     added, skipped = 0, 0
+    category_name = os.path.basename(file.filename).split('.')[0]
+    print(category_name)
     file_content = file.read().decode("utf-8")
     file_io = io.StringIO(file_content)
     for row in file_io:
         if not row.startswith("http"):
             continue
-        image = Image(url=row.strip())
+        image = Image(url=row.strip(), category=category_name)
         if add_image(image):
             added += 1
         else:
             skipped += 1
     return f"Loaded {added} new images. {skipped} already existing."
+
 
 def save_numbers(file):
     added, skipped = 0, 0
@@ -71,6 +76,14 @@ def read_image():
     upload_folder = current_app.config["UPLOAD_FOLDER"]
     image_path = os.path.join(upload_folder, "picture.jpg")
     return url_for("static", filename="uploads/picture.jpg") if os.path.exists(image_path) else None
+
+
+def delete_image():
+    upload_folder = current_app.config["UPLOAD_FOLDER"]
+    image_path = os.path.join(upload_folder, "picture.jpg")
+    if os.path.exists(image_path):
+        os.remove(image_path)
+    return redirect(url_for('index'))
 
 
 def send_message(contact, picture_path, text_message, search_box, page):
