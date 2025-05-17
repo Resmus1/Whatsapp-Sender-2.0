@@ -55,9 +55,19 @@ def index():
         session['selected_category'] = selected_category
         session['current_index'] = 0
         current_index = 0
+<<<<<<< HEAD
         print(session['selected_category'])
         print(session['current_index'])
         print(current_index)
+=======
+
+    images = get_images_by_category(
+        selected_category) if selected_category else []
+    image_url = None
+    if images:
+        image_url = random.choice(images).url
+        utils.save_image_from_url(image_url)
+>>>>>>> 49987868c3d709cd2da60c9531fdec58e00c423f
 
     return render_template(
         'index.html',
