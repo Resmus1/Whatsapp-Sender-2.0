@@ -40,7 +40,6 @@ def reset_statuses():
     g.data = get_all_users()
     session.pop("text_message", None)
     session.pop("image_path", None)
-    # return render_template("index.html", message="Reset statuses and message", numbers=utils.get_display_numbers(g.data))
     return redirect(url_for('index', message="Reset statuses and message"))
 
 
