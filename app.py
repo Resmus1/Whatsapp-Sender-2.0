@@ -112,11 +112,11 @@ def upload():
 
 @app.route("/text", methods=["POST"])
 def text():
-    session["text_message"] = request.form.get("text")
+    session["text_message"] = request.form.get("text") or ""
     return redirect(url_for('index', message=f"New message: {session["text_message"]}"))
 
 
-@app.route("/next", methods=["get"])
+@app.route("/next", methods=["GET"])
 def next_image():
     selected_category = session.get('selected_category')
     current_index = session.get('current_index')

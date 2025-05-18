@@ -90,7 +90,6 @@ def process_text_message(text_message, page):
     text_field = page.get_by_role("textbox", name="Добавьте подпись")
     text_field.click()
     lines = text_message.split("\\n")
-    print(lines)
 
     if len(text_message) > 1:
         for line in lines:
