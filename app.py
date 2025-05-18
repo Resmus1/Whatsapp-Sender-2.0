@@ -51,19 +51,6 @@ def index():
     selected_category = session.get('selected_category')
     current_index = session.get('current_index', 0)
 
-    if request.method == 'POST':
-        selected_category = request.form.get('category')
-        session['selected_category'] = selected_category
-        session['current_index'] = 0
-        current_index = 0
-
-    images = get_images_by_category(
-        selected_category) if selected_category else []
-    image_url = None
-    if images:
-        image_url = random.choice(images).url
-        utils.save_image_from_url(image_url)
-
     return render_template(
         'index.html',
         categories=categories,
@@ -102,7 +89,7 @@ def start():
                 g.data = get_all_users()
                 session["statuses"] = Counter(
                     [contact.status for contact in g.data])
-                return(redirect(url_for('index', message="Messages sent", **session["statuses"])))
+                return (redirect(url_for('index', message="Messages sent", **session["statuses"])))
 
             except Exception as e:
                 qr = "canvas[aria-label*='Scan this QR code']"
@@ -129,7 +116,7 @@ def text():
     return redirect(url_for('index', message=f"New message: {session["text_message"]}"))
 
 
-@app.route('/next')
+@app.route("/next", methods=["get"])
 def next_image():
     selected_category = session.get('selected_category')
     current_index = session.get('current_index')
@@ -140,11 +127,16 @@ def next_image():
         current_index = random.randint(0, len(images) - 1)
         session['current_index'] = current_index
         session["image_path"] = images[current_index].url
-        utils.save_image_from_url(session["image_path"])
     return redirect(url_for('index'))
 
 
-@app.route('/delete_image')
+@app.route('/save_image', methods=['POST'])
+def save_image():
+    utils.save_image_from_url(session["image_path"])
+    return redirect(url_for('index'))
+
+
+@app.route('/delete_image', methods=['POST'])
 def delete_image():
     session["image_path"] = None
     utils.delete_image()

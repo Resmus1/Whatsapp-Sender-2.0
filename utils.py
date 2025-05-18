@@ -86,6 +86,22 @@ def delete_image():
     return redirect(url_for('index'))
 
 
+def process_text_message(text_message, page):
+    text_field = page.get_by_role("textbox", name="Добавьте подпись")
+    text_field.click()
+    lines = text_message.split("\\n")
+    print(lines)
+
+    if len(text_message) > 1:
+        for line in lines:
+            if line and line != lines[-1]:
+                text_field.type(line)
+                page.keyboard.press("Shift+Enter")
+            else:
+                text_field.type(line)
+    else:
+        text_field.fill(text_message)
+
 def send_message(contact, picture_path, text_message, search_box, page):
     search_box.click()
     search_box.fill(contact.phone)
@@ -103,9 +119,7 @@ def send_message(contact, picture_path, text_message, search_box, page):
     page.get_by_role("button", name="Прикрепить").click()
     page.locator("(//input[@type='file'])[2]").set_input_files(picture_path)
 
-    text_field = page.get_by_role("textbox", name="Добавьте подпись")
-    text_field.click()
-    text_field.fill(text_message)
+    process_text_message(text_message, page)
 
     # page.get_by_role("button", name="Отправить").click()
     page.wait_for_timeout(1000)
