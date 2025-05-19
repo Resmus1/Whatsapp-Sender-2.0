@@ -5,7 +5,7 @@ from flask import url_for, current_app, redirect, session
 from playwright.sync_api import Playwright, sync_playwright
 from database import add_user, update_status, update_name, add_image
 from models import Contact, Image
-
+from collections import Counter
 
 def file_processing(file):
     ext = file.filename.rsplit('.')[-1].lower()
@@ -20,6 +20,8 @@ def file_processing(file):
             status = save_images(file_content, file_name)
     if ext == "jpg":
         status = save_image(file)
+    else:
+        return ext, "Unsupported file type."
     return ext, status
 
 
@@ -86,6 +88,21 @@ def delete_image():
     return redirect(url_for('index'))
 
 
+def process_text_message(text_message, page):
+    text_field = page.get_by_role("textbox", name="Добавьте подпись")
+    text_field.click()
+    lines = text_message.split("\\n")
+
+    if len(text_message) > 1:
+        for line in lines:
+            if line and line != lines[-1]:
+                text_field.type(line)
+                page.keyboard.press("Shift+Enter")
+            else:
+                text_field.type(line)
+    else:
+        text_field.fill(text_message)
+
 def send_message(contact, picture_path, text_message, search_box, page):
     search_box.click()
     search_box.fill(contact.phone)
@@ -103,9 +120,7 @@ def send_message(contact, picture_path, text_message, search_box, page):
     page.get_by_role("button", name="Прикрепить").click()
     page.locator("(//input[@type='file'])[2]").set_input_files(picture_path)
 
-    text_field = page.get_by_role("textbox", name="Добавьте подпись")
-    text_field.click()
-    text_field.fill(text_message)
+    process_text_message(text_message, page)
 
     # page.get_by_role("button", name="Отправить").click()
     page.wait_for_timeout(1000)
@@ -127,5 +142,15 @@ def open_whatsapp(playwright: Playwright):
     return page
 
 
-def get_display_numbers(data):
-    return [f"[{contact.status.upper()}] {contact.name or 'Без имени'} - {contact.phone}" for contact in data]
+def get_display_numbers(users):
+    return [
+        {
+            "number": getattr(user, "phone"),
+            "name": getattr(user, "name"),
+            "status": getattr(user, "status"),
+        }
+        for user in users
+    ]
+
+def counter_statuses(contacts):
+    return dict(Counter([contact.status for contact in contacts]))

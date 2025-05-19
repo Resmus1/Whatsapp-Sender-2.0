@@ -1,6 +1,7 @@
-__pycache__
-profile
-static/uploads
-testfiles
+/.venv
+/__pycache__
+/profile
+/static/uploads
+/testfiles
 database.json
 TODO.txt
