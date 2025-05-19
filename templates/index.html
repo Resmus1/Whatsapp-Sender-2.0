@@ -1,55 +1,58 @@
 {% extends "base.html" %}
-{% block title %}
-Главная страница
-{% endblock %}
+{% block title %}Главная страница{% endblock %}
 
 {% block left %}
-<form action="/start" method="get">
-    <button type="submit" class="btn btn-primary me-2">Start</button>
+<h5 class="mb-3">📋 Управление</h5>
+<form action="/start" method="get" class="mb-2">
+    <button type="submit" class="btn btn-primary w-100">▶️ Start</button>
 </form>
 
-<p>{{ message }}</p>
+<div class="mt-2">
+    <span class="badge bg-success me-2">Отправлено: {{ sent or 0 }}</span>
+    <span class="badge bg-warning text-dark">Ожидает: {{ pending or 0 }}</span>
+</div>
 
-{% if sent %}
-<p>Sent: {{ sent }}</p>
+{% if message %}
+<p class="mt-2 text-info">{{ message }}</p>
 {% endif %}
-
-{% if pending %}
-<p>Pending: {{ pending }}</p>
-{% endif %}
-
 {% if error %}
-<p>Error: {{ error }}</p>
+<p class="mt-2 text-danger">Ошибка: {{ error }}</p>
 {% endif %}
-
 {% if sent_message %}
-<p>{{ sent_message }}</p>
+<p class="mt-2 text-success">{{ sent_message }}</p>
 {% endif %}
 {% endblock %}
 
 {% block right %}
-<form action="/upload" method="post" enctype="multipart/form-data" class="d-flex align-items-center mb-3 mt-3 w-80">
-    <label class="me-auto mb-0">Upload Image</label>
-    <input type="file" name="file" class="form-control me-2 w-auto" required>
-    <button type="submit" class="btn btn-success">Загрузить</button>
+<h5 class="mb-3">⚙️ Настройки</h5>
+
+<form action="/upload" method="post" enctype="multipart/form-data" class="mb-3">
+    <label class="form-label">📤 Загрузить изображение</label>
+    <div class="input-group">
+        <input type="file" name="file" class="form-control" required>
+        <button type="submit" class="btn btn-success">Загрузить</button>
+    </div>
 </form>
 
-<form action="/text" method="post" class="d-flex align-items-center mb-3 mt-3 w-80">
-    <label class="me-auto mb-0">Message</label>
-    <input type="text" name="text" class="form-control me-2 w-auto" required>
-    <button type="submit" class="btn btn-success">Загрузить</button>
+<form action="/text" method="post" class="mb-3">
+    <label class="form-label">💬 Введите сообщение</label>
+    <div class="input-group">
+        <input type="text" name="text" class="form-control" required>
+        <button type="submit" class="btn btn-success">Загрузить</button>
+    </div>
 </form>
 
-<form action="/reset_statuses" method="get">
-    <button type="submit" class="btn btn-danger">Reset</button>
+<form action="/reset_statuses" method="get" class="mb-4">
+    <button type="submit" class="btn btn-danger w-100">🔄 Сбросить статусы</button>
 </form>
 
-<h2>Выбери категорию:</h2>
 <form action="/" method="post" id="categoryForm">
-    <select name="category" id="categorySelect" required onchange="document.getElementById('categoryForm').submit()">
-        <option value="">-- выбери --</option>
+    <label for="categorySelect" class="form-label">📂 Выбери категорию:</label>
+    <select name="category" id="categorySelect" class="form-select" required
+        onchange="document.getElementById('categoryForm').submit()">
+        <option value="" disabled {% if not selected_category %}selected{% endif %}>-- выбери --</option>
         {% for cat in categories %}
-        <option value="{{ cat }}" {% if cat == selected_category %}selected{% endif %}>{{ cat }}</option>
+        <option value="{{ cat }}" {% if cat==selected_category %}selected{% endif %}>{{ cat }}</option>
         {% endfor %}
     </select>
 </form>
@@ -57,26 +60,47 @@
 
 {% block picture %}
 {% if image_url %}
-<img src="{{ image_url }}" alt="Uploaded Image" style="height: 470px;">
+<div class="text-center">
+    <img src="{{ image_url }}" alt="Uploaded Image" class="img-fluid rounded shadow mb-3" style="max-height: 400px;">
+</div>
 {% endif %}
-<form action="/next" method="get">
-    <button type="submit" class="btn btn-primary mt-2">Next</button>
-</form>
-<form action="/save_image" method="post">
-    <button type="submit" class="btn btn-primary">Save</button>
 
-<form action="/delete_image" method="post">
-    <button type="submit" class="btn btn-danger">Delete</button>
-</form>
-
-<div id="results"></div>
+<div class="d-flex justify-content-center gap-2 mt-2">
+    <form action="/next" method="get">
+        <button type="submit" class="btn btn-outline-primary">Следующее</button>
+    </form>
+    <form action="/save_image" method="post">
+        <button type="submit" class="btn btn-outline-success">Сохранить</button>
+    </form>
+    <form action="/delete_image" method="post">
+        <button type="submit" class="btn btn-outline-danger">Удалить</button>
+    </form>
+</div>
 {% endblock %}
 
 {% block phone %}
 {% if numbers %}
-<ol>
-    {% for number in numbers %}
-    <li>{{ number }}</li>
+<h6 class="mt-2">📱 Отправленные номера:</h6>
+<ol class="list-group list-group-numbered overflow-auto" style="max-height: 420px;">
+    {% for contact in numbers %}
+    <li class="list-group-item small">
+
+        {% if contact.status == "sent" %}
+        ✅
+        {% elif contact.status == "pending" %}
+        ⏳
+        {% elif contact.status == "error" %}
+        ❌
+        {% else %}
+        ❔
+        {% endif %}
+        {% if contact.name %} 
+            {{contact.name }}
+        {% else %}
+            Без имени 
+        {% endif %}
+        {{ contact.number }}
+    </li>
     {% endfor %}
 </ol>
 {% endif %}

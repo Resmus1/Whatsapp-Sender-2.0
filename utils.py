@@ -5,7 +5,7 @@ from flask import url_for, current_app, redirect, session
 from playwright.sync_api import Playwright, sync_playwright
 from database import add_user, update_status, update_name, add_image
 from models import Contact, Image
-
+from collections import Counter
 
 def file_processing(file):
     ext = file.filename.rsplit('.')[-1].lower()
@@ -20,6 +20,8 @@ def file_processing(file):
             status = save_images(file_content, file_name)
     if ext == "jpg":
         status = save_image(file)
+    else:
+        return ext, "Unsupported file type."
     return ext, status
 
 
@@ -140,5 +142,15 @@ def open_whatsapp(playwright: Playwright):
     return page
 
 
-def get_display_numbers(data):
-    return [f"[{contact.status.upper()}] {contact.name or 'Без имени'} - {contact.phone}" for contact in data]
+def get_display_numbers(users):
+    return [
+        {
+            "number": getattr(user, "phone"),
+            "name": getattr(user, "name"),
+            "status": getattr(user, "status"),
+        }
+        for user in users
+    ]
+
+def counter_statuses(contacts):
+    return dict(Counter([contact.status for contact in contacts]))

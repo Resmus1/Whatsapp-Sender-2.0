@@ -2,7 +2,7 @@ import os
 import atexit
 import utils
 import random
-from collections import Counter
+from whatsapp_sender import open_whatsapp, send_message
 from flask import Flask, render_template,  request, url_for, g, session, redirect
 from playwright.sync_api import sync_playwright
 from config import Config
@@ -24,7 +24,7 @@ def before_request():
     if "text_message" not in session:
         session["text_message"] = ""
     if "statuses" not in session:
-        session["statuses"] = Counter([contact.status for contact in g.data])
+        session["statuses"] = utils.counter_statuses(g.data)
     if "categories" not in session:
         session["categories"] = get_image_categories()
 
@@ -38,6 +38,7 @@ def on_exit():
 def reset_statuses():
     reset_sent_statuses()
     g.data = get_all_users()
+    session["statuses"] = utils.counter_statuses(g.data)
     session.pop("text_message", None)
     session.pop("image_path", None)
     return redirect(url_for('index', message="Reset statuses and message"))
@@ -45,23 +46,30 @@ def reset_statuses():
 
 @app.route('/', methods=['GET', 'POST'])
 def index():
+    if request.method == 'POST':
+        selected_category = request.form.get('category')
+        session['selected_category'] = selected_category
+        session['current_index'] = 0  # сбросим индекс, если меняется категория
+
+        # Перенаправление на GET — хорошая практика (Post/Redirect/Get):
+        return redirect(url_for('index'))
+
     message = request.args.get("message")
     image_path = utils.read_image()
     categories = get_image_categories()
     selected_category = session.get('selected_category')
     current_index = session.get('current_index', 0)
-
+    print(utils.get_display_numbers(g.data))
     return render_template(
         'index.html',
         categories=categories,
         message=message,
         selected_category=selected_category,
-        image_url=session["image_path"] or image_path,
+        image_url=session.get("image_path") or image_path,
         current_index=current_index,
-        # total_images=len(images),
-        sent_message=session["text_message"],
+        sent_message=session.get("text_message"),
         numbers=utils.get_display_numbers(g.data),
-        **session["statuses"]
+        **session["statuses"],
     )
 
 
@@ -69,36 +77,34 @@ def index():
 def start():
     with sync_playwright() as p:
         page = utils.open_whatsapp(p)
+        try:
+            search_box = page.get_by_role("textbox", name="Текстовое поле поиска")
+            search_box.wait_for(timeout=15000)
+            picture_path = os.path.abspath(os.path.join(app.config["UPLOAD_FOLDER"], "picture.jpg"))
 
-        while True:
+            if all(contact.status == "sent" for contact in g.data):
+                return redirect(url_for('index', message="All messages sent"))
+
+            # Отправляем максимум 2 сообщения за раз (пример)
+            for contact in g.data[:2]:
+                if contact.status == "pending":
+                    utils.send_message(contact, picture_path, session["text_message"], search_box, page)
+
+            # Обновляем данные и статусы после отправки
+            g.data = get_all_users()
+            session["statuses"] = utils.counter_statuses(g.data)
+
+            return redirect(url_for('index', message="Messages sent", **session["statuses"]))
+
+        except Exception as e:
+            print(f"Ошибка загрузки чатов: {e}")
+            qr = "canvas[aria-label*='Scan this QR code']"
             try:
-                search_box = page.get_by_role(
-                    "textbox", name="Текстовое поле поиска")
-                search_box.wait_for(timeout=15000)
-                picture_path = os.path.abspath(os.path.join(
-                    app.config["UPLOAD_FOLDER"], "picture.jpg"))
-
-                if all(contact.status == "sent" for contact in g.data):
-                    return render_template("index.html", message="All messages sent", sent_message=session["text_message"], image_url=session["image_path"], numbers=utils.get_display_numbers(g.data))
-
-                for contact in g.data[:3]:
-                    if contact.status == "pending":
-                        utils.send_message(contact, picture_path,
-                                           session["text_message"], search_box, page)
-
-                g.data = get_all_users()
-                session["statuses"] = Counter(
-                    [contact.status for contact in g.data])
-                return (redirect(url_for('index', message="Messages sent", **session["statuses"])))
-
-            except Exception as e:
-                qr = "canvas[aria-label*='Scan this QR code']"
-                print(f"Error: {e}")
                 page.wait_for_selector(qr, timeout=15000)
-                print("The profile is not authorized, scanning the QR code is required")
-                page.wait_for_timeout(10000)
+            except:
+                pass
 
-    return redirect("index.html", message="Unknown error")
+    return redirect(url_for("index", message="Unknown error"))
 
 
 @app.route("/upload", methods=["POST"])
@@ -113,7 +119,7 @@ def upload():
 @app.route("/text", methods=["POST"])
 def text():
     session["text_message"] = request.form.get("text") or ""
-    return redirect(url_for('index', message=f"New message: {session["text_message"]}"))
+    return redirect(url_for('index', message=f"New message: {session['text_message']}"))
 
 
 @app.route("/next", methods=["GET"])
@@ -128,6 +134,15 @@ def next_image():
         session['current_index'] = current_index
         session["image_path"] = images[current_index].url
     return redirect(url_for('index'))
+
+
+@app.route("/set_category", methods=["POST"])
+def set_category():
+    selected = request.form.get("category")
+    if selected:
+        session["selected_category"] = selected
+        session["current_index"] = 0
+    return redirect(url_for("index"))
 
 
 @app.route('/save_image', methods=['POST'])
