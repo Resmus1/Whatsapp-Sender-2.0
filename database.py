@@ -22,6 +22,8 @@ def add_image(image):
         return True
     return False
 
+def delete_db_image(url):
+    images_table.remove(Images.url == url)
 
 def get_all_users():
     return [Contact.from_dict(contact) for contact in contact_table.all()]

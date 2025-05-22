@@ -1,14 +1,17 @@
 import os
 import io
+import random
 import requests
-from flask import url_for, current_app, redirect, session
+from flask import url_for, current_app, redirect, session, g
 from playwright.sync_api import Playwright, sync_playwright
-from database import add_user, update_status, update_name, add_image
+from database import add_user, update_status, update_name, add_image, delete_db_image, get_images_by_category, get_all_images, get_image_categories
 from models import Contact, Image
 from collections import Counter
 
+
 def file_processing(file):
     ext = file.filename.rsplit('.')[-1].lower()
+
     if ext == "txt":
         file_name = os.path.basename(file.filename).split('.')[0]
         file_content = file.read().decode("utf-8")
@@ -18,7 +21,7 @@ def file_processing(file):
             status = save_numbers(file_content)
         if all(row.startswith("http") for row in file_content):
             status = save_images(file_content, file_name)
-    if ext == "jpg":
+    elif ext == "jpg":
         status = save_image(file)
     else:
         return ext, "Unsupported file type."
@@ -35,11 +38,12 @@ def save_image(file):
     return "Image uploaded."
 
 
-def save_image_from_url(image_url):
+def save_image_from_url(current_image_url):
     upload_folder = current_app.config["UPLOAD_FOLDER"]
     image_filename = "picture.jpg"
     image_path = os.path.join(upload_folder, image_filename)
-    response = requests.get(image_url)
+
+    response = requests.get(current_image_url)
     if response.status_code == 200:
         with open(image_path, "wb") as f:
             f.write(response.content)
@@ -80,12 +84,8 @@ def read_image():
     return url_for("static", filename="uploads/picture.jpg") if os.path.exists(image_path) else None
 
 
-def delete_image():
-    upload_folder = current_app.config["UPLOAD_FOLDER"]
-    image_path = os.path.join(upload_folder, "picture.jpg")
-    if os.path.exists(image_path):
-        os.remove(image_path)
-    return redirect(url_for('index'))
+def delete_image(url):
+    delete_db_image(url)
 
 
 def process_text_message(text_message, page):
@@ -103,6 +103,7 @@ def process_text_message(text_message, page):
     else:
         text_field.fill(text_message)
 
+
 def send_message(contact, picture_path, text_message, search_box, page):
     search_box.click()
     search_box.fill(contact.phone)
@@ -113,7 +114,8 @@ def send_message(contact, picture_path, text_message, search_box, page):
             name = page.locator(
                 '//*[@id="main"]/header/div[2]/div/div/div/div/span').text_content()
             update_name(contact.phone, name)
-        except:
+        except Exception as e:
+            print(f"Ошибка при получении имени контакта {contact.phone}: {e}")
             update_status(contact.phone, "error")
             return False
 
@@ -122,7 +124,7 @@ def send_message(contact, picture_path, text_message, search_box, page):
 
     process_text_message(text_message, page)
 
-    # page.get_by_role("button", name="Отправить").click()
+    page.get_by_role("button", name="Отправить").click()
     page.wait_for_timeout(1000)
     update_status(contact.phone, "sent")
 
@@ -152,5 +154,41 @@ def get_display_numbers(users):
         for user in users
     ]
 
+
 def counter_statuses(contacts):
     return dict(Counter([contact.status for contact in contacts]))
+
+
+def select_next_image(selected_category, current_url=None):
+    images = get_images_by_category(
+        selected_category) if selected_category else get_all_images()
+    if not images:
+        return None
+    
+    if current_url:
+        filtered_images = [img for img in images if img.url != current_url]
+        if filtered_images:
+            return random.choice(filtered_images).url
+        else:
+            return current_url
+    else:
+        return random.choice(images).url
+
+
+
+def update_image_length():
+    selected_category = session.get("selected_category")
+    if selected_category:
+        length  = len(get_images_by_category(selected_category))
+    else:
+        length  = 0
+    return length
+
+def init_session():
+    if "image_directory_path" not in session:
+        session["image_directory_path"] = read_image()
+    session["image_path"] = session.get("image_path", None)
+    session["text_message"] = session.get("text_message", "")
+    session["statuses"] = counter_statuses(g.data)
+    session["categories"] = get_image_categories()
+    session["length"] = update_image_length()

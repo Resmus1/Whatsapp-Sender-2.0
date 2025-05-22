@@ -21,6 +21,11 @@
 {% if sent_message %}
 <p class="mt-2 text-success">{{ sent_message }}</p>
 {% endif %}
+{% if image_directory_path %}
+<img src="{{ image_directory_path }}" class="img-thumbnail" alt="Картинка" width="100">
+{% else %}
+<p>Нет изображения.</p>
+{% endif %}
 {% endblock %}
 
 {% block right %}
@@ -59,11 +64,13 @@
 {% endblock %}
 
 {% block picture %}
-{% if image_url %}
-<div class="text-center">
-    <img src="{{ image_url }}" alt="Uploaded Image" class="img-fluid rounded shadow mb-3" style="max-height: 400px;">
+<div class="mb-4">
+    {% if current_image_url %}
+    <img src="{{ current_image_url }}" class="img-thumbnail" alt="Картинка" width="300">
+    {% else %}
+    <p>Нет изображений.</p>
+    {% endif %}
 </div>
-{% endif %}
 
 <div class="d-flex justify-content-center gap-2 mt-2">
     <form action="/next" method="get">
@@ -73,6 +80,7 @@
         <button type="submit" class="btn btn-outline-success">Сохранить</button>
     </form>
     <form action="/delete_image" method="post">
+        <input type="hidden" name="image_url_id" value="{{ current_image_url }}">
         <button type="submit" class="btn btn-outline-danger">Удалить</button>
     </form>
 </div>
@@ -84,7 +92,6 @@
 <ol class="list-group list-group-numbered overflow-auto" style="max-height: 420px;">
     {% for contact in numbers %}
     <li class="list-group-item small">
-
         {% if contact.status == "sent" %}
         ✅
         {% elif contact.status == "pending" %}
@@ -94,14 +101,15 @@
         {% else %}
         ❔
         {% endif %}
-        {% if contact.name %} 
-            {{contact.name }}
+        {% if contact.name %}
+        {{ contact.name }}
         {% else %}
-            Без имени 
+        Без имени
         {% endif %}
         {{ contact.number }}
     </li>
     {% endfor %}
 </ol>
 {% endif %}
+{{ length }}
 {% endblock %}
