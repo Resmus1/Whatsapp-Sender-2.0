@@ -70,10 +70,9 @@ def start():
             if all(contact.status == "sent" for contact in g.data):
                 return redirect(url_for('index', message="Нет ожидающих контактов для отправки сообщений"))
 
-            for contact in g.data:
+            for contact in g.data[:2]:
                 if contact.status == "pending":
-                    utils.send_message(contact, picture_path,
-                                       session["text_message"], search_box, page)
+                    send_message(contact, picture_path, session["text_message"], search_box, page)
 
             g.data = get_all_users()
             if all(contact.status == "sent" for contact in g.data):

@@ -40,6 +40,7 @@ def save_image_to_disk(image_bytes):
         "static", filename=f"uploads/{image_filename}")
     return "Image uploaded."
 
+
 def save_image(file):
     return save_image_to_disk(file.read())
 
@@ -101,31 +102,6 @@ def process_text_message(text_message, page):
                 text_field.type(line)
     else:
         text_field.fill(text_message)
-
-
-def send_message(contact, picture_path, text_message, search_box, page):
-    search_box.click()
-    search_box.fill(contact.phone)
-    search_box.press("Enter")
-
-    if contact.name == None:
-        try:
-            name = page.locator(
-                '//*[@id="main"]/header/div[2]/div/div/div/div/span').text_content()
-            update_name(contact.phone, name)
-        except Exception as e:
-            print(f"Ошибка при получении имени контакта {contact.phone}: {e}")
-            update_status(contact.phone, "error")
-            return False
-
-    page.get_by_role("button", name="Прикрепить").click()
-    page.locator("(//input[@type='file'])[2]").set_input_files(picture_path)
-
-    process_text_message(text_message, page)
-
-    page.get_by_role("button", name="Отправить").click()
-    page.wait_for_timeout(1000)
-    update_status(contact.phone, "sent")
 
 
 def open_whatsapp(playwright: Playwright):
@@ -205,13 +181,16 @@ def delete_number(phone):
     delete_db_user(phone)
     session["statuses"] = counter_statuses(g.data)
 
+
 def add_number_to_db(phone):
     contact = Contact(phone=phone)
     add_user(contact)
     session["statuses"] = counter_statuses(g.data)
 
+
 def process_phone_number(phone):
-    cleaned = phone.replace(" ", "").replace("-", "").replace("(", "").replace(")", "").replace(".", "").strip()
+    cleaned = phone.replace(" ", "").replace(
+        "-", "").replace("(", "").replace(")", "").replace(".", "").strip()
     if cleaned.startswith("+7"):
         cleaned = cleaned[2:]
     elif cleaned.startswith("8"):
