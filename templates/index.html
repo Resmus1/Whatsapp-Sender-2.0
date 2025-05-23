@@ -78,17 +78,24 @@
 <h5 class="mb-3">⚙️ Настройки</h5>
 
 <form action="/upload" method="post" enctype="multipart/form-data" class="mb-2">
-    <label class="form-label">📤 Загрузить изображение</label>
+    <label class="form-label">📤 Загрузить изображение | список номеров/изображений</label>
     <div class="input-group">
         <input type="file" name="file" class="form-control" required>
         <button type="submit" class="btn btn-success">Загрузить</button>
     </div>
 </form>
 
-<p>!Добавление номера!</p>
+<form action="/add_number" method="post">
+    <label for="phone" class="form-label">📞 Добавить номер телефона:</label>
+    <div class="input-group">
+    <span class="input-group-text">+7</span>
+    <input type="tel" name="phone" id="phone" class="form-control" placeholder="7011234567" required></label>
+    <button type="submit" class="btn btn-success">Добавить</button>
+    </div>
+</form>
 
 <form action="/" method="post" id="categoryForm">
-    <label for="categorySelect" class="form-label">📂&nbsp;Категория:</label>
+    <label for="categorySelect" class="form-label">📂 Категория:</label>
     <select name="category" id="categorySelect" class="form-select" required
         onchange="document.getElementById('categoryForm').submit()">
         <option value="" disabled {% if not selected_category %}selected{% endif %}>-- Выберите --</option>

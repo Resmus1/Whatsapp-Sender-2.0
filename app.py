@@ -158,5 +158,14 @@ def delete_number_route():
     return redirect(url_for('index', message=f"{phone} удален."))
 
 
+@app.route("/add_number", methods=["POST"])
+def add_number():
+    phone = utils.process_phone_number(request.form.get("phone"))
+    if not phone.isdigit() or len(phone) != 10:
+        return redirect(url_for('index', message="Введите 10 цифр после +7 (например, 7011234567)"))
+    utils.add_number_to_db(phone)
+    return redirect(url_for('index', message=f"{phone} добавлен."))
+
+
 if __name__ == "__main__":
     app.run(debug=True)

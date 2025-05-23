@@ -204,3 +204,16 @@ def change_status(phone, status):
 def delete_number(phone):
     delete_db_user(phone)
     session["statuses"] = counter_statuses(g.data)
+
+def add_number_to_db(phone):
+    contact = Contact(phone=phone)
+    add_user(contact)
+    session["statuses"] = counter_statuses(g.data)
+
+def process_phone_number(phone):
+    cleaned = phone.replace(" ", "").replace("-", "").replace("(", "").replace(")", "").replace(".", "").strip()
+    if cleaned.startswith("+7"):
+        cleaned = cleaned[2:]
+    elif cleaned.startswith("8"):
+        cleaned = cleaned[1:]
+    return cleaned
