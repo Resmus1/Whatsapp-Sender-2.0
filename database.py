@@ -23,8 +23,10 @@ def add_image(image):
         return True
     return False
 
+
 def delete_db_image(url):
     images_table.remove(Images.url == url)
+
 
 def get_all_users():
     try:
@@ -33,8 +35,10 @@ def get_all_users():
     except json.JSONDecodeError:
         return []
 
+
 def delete_db_user(phone):
     contact_table.remove(Contacts.phone == phone)
+
 
 def get_all_images():
     try:
@@ -42,6 +46,7 @@ def get_all_images():
         return [Image.from_dict(image) for image in images]
     except json.JSONDecodeError:
         return []
+
 
 def get_image_categories():
     return list(set(image.category for image in get_all_images()))
@@ -53,11 +58,13 @@ def get_images_by_category(category):
 
 def reset_sent_statuses():
     for contact in contact_table.search(Contacts.status == 'sent'):
-        contact_table.update({'status': 'pending'}, Contacts.phone == contact['phone'])
+        contact_table.update({'status': 'pending'},
+                             Contacts.phone == contact['phone'])
+
 
 def update_status(phone, new_status):
     contact_table.update({'status': new_status}, Contacts.phone == phone)
 
+
 def update_name(phone, name):
     contact_table.update({'name': name}, Contacts.phone == phone)
-

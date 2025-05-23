@@ -25,3 +25,9 @@
     width: auto;
     object-fit: contain;
 }
+
+.textarea_message {
+    overflow-y: auto;
+    resize: none;
+    height: 115px;
+}
