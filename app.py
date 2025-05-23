@@ -127,7 +127,7 @@ def set_category():
 @app.route('/save_image', methods=['POST'])
 def save_image():
     utils.save_image_from_url(session.get('current_image_url'))
-    return redirect(url_for('index'))
+    return redirect(url_for('index', message="Изображение сохранено"))
 
 
 @app.route('/delete_image', methods=['POST'])
