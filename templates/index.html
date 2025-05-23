@@ -3,35 +3,66 @@
 
 {% block left %}
 <h5 class="mb-3">📋 Управление</h5>
-<form action="/start" method="get" class="mb-2">
-    <button type="submit" class="btn btn-primary w-100">▶️ Start</button>
-</form>
-
-<div class="mt-2">
-    <span class="badge bg-success me-2">Отправлено: {{ sent or 0 }}</span>
-    <span class="badge bg-warning text-dark">Ожидает: {{ pending or 0 }}</span>
+<div class="row">
+    <div class="col-md-12">
+        <form action="/start" method="get">
+            <button type="submit" class="btn btn-primary w-100">▶️ Start</button>
+        </form>
+    </div>
+    <div class="col-md-5">
+        <span class="badge bg-success me-2">Отправлено: {{ sent or 0 }}</span>
+        <span class="badge bg-warning text-dark">Ожидает: {{ pending or 0 }}</span>
+    </div>
+    <div class="col-md-7">
+        {% if message %}
+        <p class="text-info m-0" style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+            {{ message }}
+        </p>
+        {% endif %}
+        {% if error %}
+        <p class="text-danger m-0">Ошибка: {{ error }}</p>
+        {% endif %}
+    </div>
 </div>
 
-{% if message %}
-<p class="mt-2 text-info">{{ message }}</p>
-{% endif %}
-{% if error %}
-<p class="mt-2 text-danger">Ошибка: {{ error }}</p>
-{% endif %}
-{% if sent_message %}
-<p class="mt-2 text-success">{{ sent_message }}</p>
-{% endif %}
-{% if image_directory_path %}
-<img src="{{ image_directory_path }}" class="img-thumbnail" alt="Картинка" width="100">
-{% else %}
-<p>Нет изображения.</p>
-{% endif %}
+<div class="row">
+    <div class="col-md-5">
+        <div class="row">
+            <div class="col-md-12">
+                <p class="m-0">Сообщение:</p>
+            </div>
+            <div class="col-md-5 border rounded ms-2 p-1 text-center">
+                {% if image_directory_path %}
+                <img src="{{ image_directory_path }}" class="img-fluid" alt="Картинка" width="100px">
+                {% else %}
+                <p>Нет изображения.</p>
+                {% endif %}
+
+                {% if sent_message %}
+                <p class="text-success small m-0">
+                    {{ sent_message[:10] ~ '...' if sent_message|length > 10 else sent_message }}
+                </p>
+                {% endif %}
+            </div>
+            <div class="col-md-6">
+                <p class="m-0">Здесь нужно что-то разместить сообщение для рассылки (максимум 1000 символов).</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-7">
+        <form action="/reset_statuses" method="get" class="mb-1">
+            <button type="submit" class="btn btn-danger w-100">🔄 Сбросить статусы</button>
+        </form>
+    </div>
+</div>
+
+
 {% endblock %}
 
 {% block right %}
 <h5 class="mb-3">⚙️ Настройки</h5>
 
-<form action="/upload" method="post" enctype="multipart/form-data" class="mb-3">
+<form action="/upload" method="post" enctype="multipart/form-data" class="mb-2">
     <label class="form-label">📤 Загрузить изображение</label>
     <div class="input-group">
         <input type="file" name="file" class="form-control" required>
@@ -39,7 +70,7 @@
     </div>
 </form>
 
-<form action="/text" method="post" class="mb-3">
+<form action="/text" method="post" class="mb-2">
     <label class="form-label">💬 Введите сообщение</label>
     <div class="input-group">
         <input type="text" name="text" class="form-control" required>
@@ -47,26 +78,28 @@
     </div>
 </form>
 
-<form action="/reset_statuses" method="get" class="mb-4">
-    <button type="submit" class="btn btn-danger w-100">🔄 Сбросить статусы</button>
-</form>
+<p>!Добавление номера!</p>
 
 <form action="/" method="post" id="categoryForm">
-    <label for="categorySelect" class="form-label">📂 Выбери категорию:</label>
+    <label for="categorySelect" class="form-label">📂&nbsp;Категория:</label>
     <select name="category" id="categorySelect" class="form-select" required
         onchange="document.getElementById('categoryForm').submit()">
-        <option value="" disabled {% if not selected_category %}selected{% endif %}>-- выбери --</option>
+        <option value="" disabled {% if not selected_category %}selected{% endif %}>-- Выберите --</option>
         {% for cat in categories %}
         <option value="{{ cat }}" {% if cat==selected_category %}selected{% endif %}>{{ cat }}</option>
         {% endfor %}
     </select>
 </form>
+<div class="mt-2">
+    <span class="badge bg-info">Количество: {{ length }}</span>
+</div>
+
 {% endblock %}
 
 {% block picture %}
 <div class="mb-4">
     {% if current_image_url %}
-    <img src="{{ current_image_url }}" class="img-thumbnail" alt="Картинка" width="300">
+    <img src="{{ current_image_url }}" class="img-thumbnail fixed-size-img" alt="Картинка">
     {% else %}
     <p>Нет изображений.</p>
     {% endif %}
@@ -89,27 +122,39 @@
 {% block phone %}
 {% if numbers %}
 <h6 class="mt-2">📱 Отправленные номера:</h6>
-<ol class="list-group list-group-numbered overflow-auto" style="max-height: 420px;">
+<ol class="list-group list-group-numbered scrollable-list flex-grow-1">
     {% for contact in numbers %}
-    <li class="list-group-item small">
-        {% if contact.status == "sent" %}
-        ✅
-        {% elif contact.status == "pending" %}
-        ⏳
-        {% elif contact.status == "error" %}
-        ❌
-        {% else %}
-        ❔
-        {% endif %}
-        {% if contact.name %}
-        {{ contact.name }}
-        {% else %}
-        Без имени
-        {% endif %}
-        {{ contact.number }}
+    <li class="list-group-item small d-flex align-items-center justify-content-between">
+        <div>
+            {% if contact.status == "sent" %}
+            ✅
+            {% elif contact.status == "pending" %}
+            ⏳
+            {% elif contact.status == "error" %}
+            ❌
+            {% else %}
+            ❔
+            {% endif %}
+            {{ contact.name or "Без имени" }} — {{ contact.number }}
+        </div>
+        <div class="btn-group btn-group-sm" role="group">
+            <form action="/change_status" method="post" class="d-inline">
+                <input type="hidden" name="phone" value="{{ contact.number }}">
+                <input type="hidden" name="status" value="sent">
+                <button type="submit" class="btn btn-success" title="Отправлено">✅</button>
+            </form>
+            <form action="/change_status" method="post" class="d-inline">
+                <input type="hidden" name="phone" value="{{ contact.number }}">
+                <input type="hidden" name="status" value="pending">
+                <button type="submit" class="btn btn-warning" title="Ожидает">⏳</button>
+            </form>
+            <form action="/delete_number" method="post" class="d-inline">
+                <input type="hidden" name="phone" value="{{ contact.number }}">
+                <button type="submit" class="btn btn-outline-danger" title="Удалить">🗑</button>
+            </form>
+        </div>
     </li>
     {% endfor %}
 </ol>
 {% endif %}
-{{ length }}
 {% endblock %}

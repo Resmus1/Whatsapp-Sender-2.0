@@ -32,24 +32,24 @@
         <!-- Верхняя строка: левая и правая панель -->
         <div class="row mb-4">
             <div class="col-md-6">
-                <div class="bg-white border rounded p-3 shadow-sm h-100">
+                <div class="bg-white border rounded p-3 shadow-sm fixed-height-box">
                     {% block left %}{% endblock %}
                 </div>
             </div>
             <div class="col-md-6">
-                <div class="bg-white border rounded p-3 shadow-sm h-100">
+                <div class="bg-white border rounded p-3 shadow-sm fixed-height-box">
                     {% block right %}{% endblock %}
                 </div>
             </div>
         </div>
 
         <!-- Основной блок с картинкой и номерами -->
-        <div class="bg-white border rounded p-3 shadow-sm mb-4">
-            <div class="row g-4">
+        <div class="bg-white border rounded p-3 shadow-sm fixed-height-box-2">
+            <div class="row g-4 h-100">
                 <div class="col-md-6 text-center d-flex flex-column align-items-center justify-content-center">
                     {% block picture %}{% endblock %}
                 </div>
-                <div class="col-md-6">
+                <div class="col-md-6 d-flex flex-column full-height">
                     {% block phone %}{% endblock %}
                 </div>
             </div>

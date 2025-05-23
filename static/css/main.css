@@ -1,0 +1,27 @@
+.fixed-height-box {
+    height: 370px;
+}
+
+.fixed-height-box-2 {
+    height: 540px;
+    /* или нужная тебе высота */
+    display: flex;
+    flex-direction: column;
+}
+
+.full-height {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+}
+
+.scrollable-list {
+    flex-grow: 1;
+    overflow-y: auto;
+}
+
+.fixed-size-img {
+    height: 440px;
+    width: auto;
+    object-fit: contain;
+}

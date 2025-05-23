@@ -4,7 +4,7 @@ import random
 import requests
 from flask import url_for, current_app, redirect, session, g
 from playwright.sync_api import Playwright, sync_playwright
-from database import add_user, update_status, update_name, add_image, delete_db_image, get_images_by_category, get_all_images, get_image_categories
+from database import get_all_users, add_user, update_status, update_name, add_image, delete_db_image, get_images_by_category, get_all_images, get_image_categories, delete_db_user
 from models import Contact, Image
 from collections import Counter
 
@@ -156,7 +156,9 @@ def get_display_numbers(users):
 
 
 def counter_statuses(contacts):
-    return dict(Counter([contact.status for contact in contacts]))
+    if not contacts:
+        return {}
+    return dict(Counter([contact.status for contact in contacts if contact.status is not None]))
 
 
 def select_next_image(selected_category, current_url=None):
@@ -189,6 +191,16 @@ def init_session():
         session["image_directory_path"] = read_image()
     session["image_path"] = session.get("image_path", None)
     session["text_message"] = session.get("text_message", "")
+    g.data = get_all_users() or []
     session["statuses"] = counter_statuses(g.data)
     session["categories"] = get_image_categories()
     session["length"] = update_image_length()
+
+
+def change_status(phone, status):
+    update_status(phone, status)
+    session["statuses"] = counter_statuses(g.data)
+
+def delete_number(phone):
+    delete_db_user(phone)
+    session["statuses"] = counter_statuses(g.data)

@@ -17,7 +17,6 @@ os.makedirs(app.config["UPLOAD_FOLDER"], exist_ok=True)
 
 @app.before_request
 def before_request():
-    g.data = get_all_users()
     utils.init_session()
 
 
@@ -33,7 +32,7 @@ def reset_statuses():
     session["statuses"] = utils.counter_statuses(g.data)
     session.pop("text_message", None)
     session.pop("image_path", None)
-    return redirect(url_for('index', message="Reset statuses and message"))
+    return redirect(url_for('index', message="Статусы сброшены, сообщение удалено"))
 
 
 @app.route('/', methods=['GET', 'POST'])
@@ -42,7 +41,6 @@ def index():
     categories = get_image_categories()
     selected_category = session.get('selected_category')
     current_image_url = session.get('current_image_url')
-
 
     return render_template(
         'index.html',
@@ -70,7 +68,7 @@ def start():
                 app.config["UPLOAD_FOLDER"], "picture.jpg"))
 
             if all(contact.status == "sent" for contact in g.data):
-                return redirect(url_for('index', message="All messages sent"))
+                return redirect(url_for('index', message="Нет ожидающих контактов для отправки сообщений"))
 
             for contact in g.data:
                 if contact.status == "pending":
@@ -79,7 +77,7 @@ def start():
 
             g.data = get_all_users()
             if all(contact.status == "sent" for contact in g.data):
-                return redirect(url_for('index', message="All messages sent"))
+                return redirect(url_for('index', message="Все сообщения отправлены"))
 
             return redirect(url_for('index', message="Messages sent", **session["statuses"]))
 
@@ -106,7 +104,7 @@ def upload():
 @app.route("/text", methods=["POST"])
 def text():
     session["text_message"] = request.form.get("text") or ""
-    return redirect(url_for('index', message=f"New message: {session['text_message']}"))
+    return redirect(url_for('index', message="Текст сообщения сохранен"))
 
 
 @app.route("/next", methods=["GET"])
@@ -143,6 +141,21 @@ def delete_image():
     )
     utils.update_image_length()
     return redirect(url_for('index'))
+
+
+@app.route('/change_status', methods=['POST'])
+def change_status_route():
+    phone = request.form.get('phone')
+    status = request.form.get('status')
+    utils.change_status(phone, status)
+    return redirect(url_for('index', message=f"Статус {phone} изменен."))
+
+
+@app.route('/delete_number', methods=['POST'])
+def delete_number_route():
+    phone = request.form.get('phone')
+    utils.delete_number(phone)
+    return redirect(url_for('index', message=f"{phone} удален."))
 
 
 if __name__ == "__main__":
