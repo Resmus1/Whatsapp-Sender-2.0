@@ -28,30 +28,29 @@ def file_processing(file):
     return ext, status
 
 
-def save_image(file):
+def save_image_to_disk(image_bytes):
     upload_folder = current_app.config["UPLOAD_FOLDER"]
     image_filename = "picture.jpg"
     image_path = os.path.join(upload_folder, image_filename)
-    file.save(image_path)
+
+    with open(image_path, "wb") as f:
+        f.write(image_bytes)
+
     session["image_path"] = url_for(
         "static", filename=f"uploads/{image_filename}")
     return "Image uploaded."
 
+def save_image(file):
+    return save_image_to_disk(file.read())
+
 
 def save_image_from_url(current_image_url):
-    upload_folder = current_app.config["UPLOAD_FOLDER"]
-    image_filename = "picture.jpg"
-    image_path = os.path.join(upload_folder, image_filename)
-
     response = requests.get(current_image_url)
     if response.status_code == 200:
-        with open(image_path, "wb") as f:
-            f.write(response.content)
+        return save_image_to_disk(response.content)
     else:
         raise Exception(
             f"Не удалось скачать изображение: HTTP {response.status_code}")
-
-    return url_for("static", filename=f"uploads/{image_filename}")
 
 
 def save_images(file_content, file_name):
@@ -166,7 +165,7 @@ def select_next_image(selected_category, current_url=None):
         selected_category) if selected_category else get_all_images()
     if not images:
         return None
-    
+
     if current_url:
         filtered_images = [img for img in images if img.url != current_url]
         if filtered_images:
@@ -177,14 +176,14 @@ def select_next_image(selected_category, current_url=None):
         return random.choice(images).url
 
 
-
 def update_image_length():
     selected_category = session.get("selected_category")
     if selected_category:
-        length  = len(get_images_by_category(selected_category))
+        length = len(get_images_by_category(selected_category))
     else:
-        length  = 0
+        length = 0
     return length
+
 
 def init_session():
     if "image_directory_path" not in session:
@@ -200,6 +199,7 @@ def init_session():
 def change_status(phone, status):
     update_status(phone, status)
     session["statuses"] = counter_statuses(g.data)
+
 
 def delete_number(phone):
     delete_db_user(phone)
