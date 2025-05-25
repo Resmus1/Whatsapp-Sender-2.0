@@ -37,10 +37,8 @@ def reset_statuses():
     db.reset_sent_statuses()
     g.data = db.get_all_users()
     session["statuses"] = utils.counter_statuses(g.data)
-    session.pop("text_message", None)
-    session.pop("image_path", None)
 
-    return utils.go_home_page("Статусы сброшены, сообщение удалено")
+    return utils.go_home_page("Статусы сброшены")
 
 
 @app.route('/', methods=['GET', 'POST'])
