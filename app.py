@@ -80,7 +80,7 @@ def start():
             if all(contact.status == "sent" for contact in g.data):
                 return utils.go_home_page("Нет ожидающих контактов для отправки сообщений")
 
-            for contact in g.data[:2]:
+            for contact in g.data:
                 logger.debug(f"Отправка сообщения контакту: {contact.phone}")
                 if contact.status == "pending":
                     send_message(
@@ -129,7 +129,6 @@ def text():
     if uploaded_file and uploaded_file.filename.endswith('.txt'):
         file_content = uploaded_file.read().decode('utf-8')
         session["text_message"] = file_content
-        return utils.go_home_page("Текст сообщения загружен")
 
     return utils.go_home_page("Текст сообщения сохранен")
 

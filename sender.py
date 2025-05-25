@@ -38,7 +38,7 @@ def send_message(contact, picture_path, text_message, search_box, page):
 
     process_text_message(text_message, page)
 
-    # page.get_by_role("button", name="Отправить").click()
+    page.get_by_role("button", name="Отправить").click()
     page.wait_for_timeout(1000)
     db.update_status(contact.phone, "sent")
 

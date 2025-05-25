@@ -34,12 +34,16 @@ class Database:
         self.contacts.remove(self.Contacts.phone == phone)
 
     def reset_sent_statuses(self):
-        self.contacts.update({'status': 'pending'},
-                             self.Contacts.status == 'sent')
+        self.contacts.update(
+            {'status': 'pending'},
+            self.Contacts.status == 'sent'
+        )
 
     def update_status(self, phone, new_status):
-        self.contacts.update({'status': new_status},
-                             self.Contacts.phone == phone)
+        self.contacts.update(
+            {'status': new_status},
+            self.Contacts.phone == phone
+            )
 
     def update_name(self, phone, name):
         self.contacts.update({'name': name}, self.Contacts.phone == phone)
