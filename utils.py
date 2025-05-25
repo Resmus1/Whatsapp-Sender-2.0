@@ -23,7 +23,7 @@ def file_processing(file):
         status = save_image(file)
     else:
         return ext, "Unsupported file type."
-    return ext, status
+    return status
 
 
 def save_image_to_disk(image_bytes):
