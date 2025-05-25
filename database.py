@@ -1,6 +1,7 @@
 from tinydb import TinyDB, Query
 from models import Contact, Image
 import json
+from logger import logger
 
 db = TinyDB('database.json')
 contact_table = db.table('contacts')
@@ -11,16 +12,24 @@ Images = Query()
 
 
 def add_user(user):
-    if not contact_table.contains(Contacts.phone == user.phone):
-        contact_table.insert(user.to_dict())
-        return True
+    try:
+        if not contact_table.contains(Contacts.phone == user.phone):
+            contact_table.insert(user.to_dict())
+            logger.info(f"Добавлен контакт: {user.phone}")
+            return True
+    except Exception as e:
+        logger.exception((f"Ошибка при добавлении пользователя: {e}"))
     return False
 
 
 def add_image(image):
-    if not images_table.contains(Images.url == image.url):
-        images_table.insert(image.to_dict())
-        return True
+    try:
+        if not images_table.contains(Images.url == image.url):
+            images_table.insert(image.to_dict())
+            logger.info(f"Добавлено изображение: {image.url}")
+            return True
+    except Exception as e:
+        logger.exception((f"Ошибка при добавлении изображения: {e}"))
     return False
 
 
@@ -49,17 +58,17 @@ def get_all_images():
 
 
 def get_image_categories():
-    return list(set(image.category for image in get_all_images()))
+    images = get_all_images()
+    return list(set(image.category for image in images))
 
 
 def get_images_by_category(category):
-    return [image for image in get_all_images() if image.category == category]
+    images = get_all_images()
+    return [image for image in images if image.category == category]
 
 
 def reset_sent_statuses():
-    for contact in contact_table.search(Contacts.status == 'sent'):
-        contact_table.update({'status': 'pending'},
-                             Contacts.phone == contact['phone'])
+    contact_table.update({'status': 'pending'}, Contacts.status == 'sent')
 
 
 def update_status(phone, new_status):
