@@ -94,7 +94,7 @@
     </div>
 </form>
 
-<form action="/" method="post" id="categoryForm">
+<form action="{{ url_for('set_category') }}" method="post" id="categoryForm">
     <label for="categorySelect" class="form-label">📂 Категория:</label>
     <select name="category" id="categorySelect" class="form-select" required
         onchange="document.getElementById('categoryForm').submit()">

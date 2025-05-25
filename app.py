@@ -1,12 +1,15 @@
 import os
 import atexit
-import utils
-import random
-from whatsapp_sender import open_whatsapp, send_message
-from flask import Flask, render_template,  request, url_for, g, session, redirect
+from pathlib import Path
+
+from flask import Flask, render_template,  request, url_for, g, session
 from playwright.sync_api import sync_playwright
+
 from config import Config
-from database import get_all_users, reset_sent_statuses, get_image_categories, get_images_by_category, get_all_images
+from database import get_all_users, reset_sent_statuses, get_image_categories
+
+from sender import open_whatsapp, send_message
+import utils
 
 app = Flask(__name__)
 app.config.from_object(Config)
@@ -32,7 +35,7 @@ def reset_statuses():
     session["statuses"] = utils.counter_statuses(g.data)
     session.pop("text_message", None)
     session.pop("image_path", None)
-    return redirect(url_for('index', message="Статусы сброшены, сообщение удалено"))
+    return utils.go_home_page("Статусы сброшены, сообщение удалено")
 
 
 @app.route('/', methods=['GET', 'POST'])
@@ -58,27 +61,31 @@ def index():
 
 @app.route("/start")
 def start():
-    with sync_playwright() as p:
-        page = utils.open_whatsapp(p)
+    with sync_playwright() as playwright:
+        page = open_whatsapp(playwright)
         try:
             search_box = page.get_by_role(
                 "textbox", name="Текстовое поле поиска")
             search_box.wait_for(timeout=15000)
-            picture_path = os.path.abspath(os.path.join(
-                app.config["UPLOAD_FOLDER"], "picture.jpg"))
+            picture_path = Path(app.config["UPLOAD_FOLDER"]) / "picture.jpg"
 
             if all(contact.status == "sent" for contact in g.data):
-                return redirect(url_for('index', message="Нет ожидающих контактов для отправки сообщений"))
+                return utils.go_home_page("Нет ожидающих контактов для отправки сообщений")
 
             for contact in g.data[:2]:
                 if contact.status == "pending":
-                    send_message(contact, picture_path, session["text_message"], search_box, page)
+                    send_message(
+                        contact,
+                        picture_path,
+                        session["text_message"],
+                        search_box, page
+                    )
 
             g.data = get_all_users()
             if all(contact.status == "sent" for contact in g.data):
-                return redirect(url_for('index', message="Все сообщения отправлены"))
+                return utils.go_home_page("Все сообщения отправлены")
 
-            return redirect(url_for('index', message="Messages sent", **session["statuses"]))
+            return utils.go_home_page("Messages sent", **session["statuses"])
 
         except Exception as e:
             print(f"Ошибка загрузки чатов: {e}")
@@ -88,7 +95,7 @@ def start():
             except:
                 pass
 
-    return redirect(url_for("index", message="Unknown error"))
+    return utils.go_home_page("Unknown error")
 
 
 @app.route("/upload", methods=["POST"])
@@ -97,13 +104,13 @@ def upload():
 
     ext, status = utils.file_processing(upload_file)
     print(f"File extension: {ext}")
-    return redirect(url_for('index', message=status))
+    return utils.go_home_page(status)
 
 
 @app.route("/text", methods=["POST"])
 def text():
     session["text_message"] = request.form.get("text") or ""
-    return redirect(url_for('index', message="Текст сообщения сохранен"))
+    return utils.go_home_page("Текст сообщения сохранен")
 
 
 @app.route("/next", methods=["GET"])
@@ -112,7 +119,7 @@ def next_image():
         session.get('selected_category'),
         session.get('current_image_url')
     )
-    return redirect(url_for('index'))
+    return utils.go_home_page("Следующее изображение")
 
 
 @app.route("/set_category", methods=["POST"])
@@ -120,13 +127,13 @@ def set_category():
     selected = request.form.get("category")
     if selected:
         session["selected_category"] = selected
-    return redirect(url_for("index"))
+    return utils.go_home_page("Категория изменена")
 
 
 @app.route('/save_image', methods=['POST'])
 def save_image():
     utils.save_image_from_url(session.get('current_image_url'))
-    return redirect(url_for('index', message="Изображение сохранено"))
+    return utils.go_home_page("Изображение сохранено")
 
 
 @app.route('/delete_image', methods=['POST'])
@@ -139,7 +146,7 @@ def delete_image():
         current_url
     )
     utils.update_image_length()
-    return redirect(url_for('index'))
+    return utils.go_home_page("Изображение удалено")
 
 
 @app.route('/change_status', methods=['POST'])
@@ -147,23 +154,23 @@ def change_status_route():
     phone = request.form.get('phone')
     status = request.form.get('status')
     utils.change_status(phone, status)
-    return redirect(url_for('index', message=f"Статус {phone} изменен."))
+    return utils.go_home_page(f"Статус {phone} изменен.")
 
 
 @app.route('/delete_number', methods=['POST'])
 def delete_number_route():
     phone = request.form.get('phone')
     utils.delete_number(phone)
-    return redirect(url_for('index', message=f"{phone} удален."))
+    return utils.go_home_page(f"{phone} удален.")
 
 
 @app.route("/add_number", methods=["POST"])
 def add_number():
     phone = utils.process_phone_number(request.form.get("phone"))
     if not phone.isdigit() or len(phone) != 10:
-        return redirect(url_for('index', message="Введите 10 цифр после +7 (например, 7011234567)"))
+        return utils.go_home_page(f"Введите 10 цифр после +7 (например, 7011234567)")
     utils.add_number_to_db(phone)
-    return redirect(url_for('index', message=f"{phone} добавлен."))
+    return utils.go_home_page(f"{phone} добавлен.")
 
 
 if __name__ == "__main__":

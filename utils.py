@@ -1,10 +1,8 @@
 import os
-import io
 import random
 import requests
-from flask import url_for, current_app, redirect, session, g
-from playwright.sync_api import Playwright, sync_playwright
-from database import get_all_users, add_user, update_status, update_name, add_image, delete_db_image, get_images_by_category, get_all_images, get_image_categories, delete_db_user
+from flask import url_for, redirect, current_app, session, g
+from database import get_all_users, add_user, update_status, add_image, delete_db_image, get_images_by_category, get_all_images, get_image_categories, delete_db_user
 from models import Contact, Image
 from collections import Counter
 
@@ -104,21 +102,6 @@ def process_text_message(text_message, page):
         text_field.fill(text_message)
 
 
-def open_whatsapp(playwright: Playwright):
-    context = playwright.chromium.launch_persistent_context(
-        user_data_dir="profile",
-        headless=False,
-        args=[
-            "--disable-application-cache",
-            "--disk-cache-size=1",
-            "--start-maximized"
-        ]
-    )
-    page = context.new_page()
-    page.goto("https://web.whatsapp.com/")
-    return page
-
-
 def get_display_numbers(users):
     return [
         {
@@ -162,10 +145,10 @@ def update_image_length():
 
 
 def init_session():
-    if "image_directory_path" not in session:
-        session["image_directory_path"] = read_image()
-    session["image_path"] = session.get("image_path", None)
+    session.setdefault("image_directory_path", read_image())
+    session.setdefault("image_path", None)
     session["text_message"] = session.get("text_message", "")
+    session["selected_category"] = session.get("selected_category", None)
     g.data = get_all_users() or []
     session["statuses"] = counter_statuses(g.data)
     session["categories"] = get_image_categories()
@@ -196,3 +179,6 @@ def process_phone_number(phone):
     elif cleaned.startswith("8"):
         cleaned = cleaned[1:]
     return cleaned
+
+def go_home_page(message):
+    return redirect(url_for('index', message=message))

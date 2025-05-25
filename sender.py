@@ -1,18 +1,21 @@
-import os
-from playwright.sync_api import sync_playwright
+from playwright.sync_api import Playwright
 from database import update_name, update_status
 from utils import process_text_message
 
 
-def open_whatsapp(playwright):
-    browser = playwright.chromium.launch(
-        headless=False)  # Запуск браузера с UI
-    context = browser.new_context()
-    page = context.new_page()
-    page.goto("https://web.whatsapp.com")
-    print("Откройте WhatsApp Web и просканируйте QR код, если потребуется.")
+def open_whatsapp(playwright: Playwright):
+    browser = playwright.chromium.launch_persistent_context(
+        user_data_dir="profile",
+        headless=False,
+        args=[
+            "--disable-application-cache",
+            "--disk-cache-size=1",
+            "--start-maximized"
+        ]
+    )
+    page = browser.pages[0] if browser.pages else browser.new_page()
+    page.goto("https://web.whatsapp.com/")
     return page
-
 
 def send_message(contact, picture_path, text_message, search_box, page):
     search_box.click()
