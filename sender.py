@@ -33,7 +33,7 @@ def send_message(contact, picture_path, text_message, search_box, page):
             db.update_status(contact.phone, "error")
             return False
 
-    # page.get_by_role("button", name="Прикрепить").click()
+    page.get_by_role("button", name="Прикрепить").click()
     page.locator("(//input[@type='file'])[2]").set_input_files(picture_path)
 
     process_text_message(text_message, page)

@@ -56,7 +56,7 @@
             </form>
         </div>
         <div>
-            <form action="/text" method="post" enctype="multipart/form-data" class="mb-2">
+            <form action="/text" method="post" enctype="multipart/form-data" class="mb-2" id="textForm">
                 <label for="text" class="form-label">💬 Введите сообщение</label>
                 <div class="mb-2">
                     <textarea name="text" id="text" class="form-control textarea_message" maxlength="1000"
@@ -73,7 +73,13 @@
         </div>
     </div>
 </div>
-
+<script>
+    document.getElementById('fileInput').addEventListener('change', function () {
+        if (this.files.length > 0) {
+            document.getElementById('textForm').submit();
+        }
+    });
+</script>
 
 {% endblock %}
 

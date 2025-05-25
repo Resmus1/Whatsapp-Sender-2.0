@@ -93,18 +93,7 @@ def delete_image(url):
 def process_text_message(text_message, page):
     text_field = page.get_by_role("textbox", name="Добавьте подпись")
     text_field.click()
-    lines = text_message.split("\\n")
-
-    if len(text_message) > 1:
-        for line in lines:
-            if line and line != lines[-1]:
-                text_field.type(line)
-                page.keyboard.press("Shift+Enter")
-            else:
-                text_field.type(line)
-    else:
-        text_field.fill(text_message)
-
+    text_field.fill(text_message)
 
 def get_display_numbers(users):
     return [
