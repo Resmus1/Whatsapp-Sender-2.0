@@ -56,15 +56,18 @@
             </form>
         </div>
         <div>
-            <form action="/text" method="post" class="mb-2">
+            <form action="/text" method="post" enctype="multipart/form-data" class="mb-2">
                 <label for="text" class="form-label">💬 Введите сообщение</label>
                 <div class="mb-2">
                     <textarea name="text" id="text" class="form-control textarea_message" maxlength="1000"
                         placeholder="Введите текст...">{{ session.get('text_message') }}</textarea>
                 </div>
                 <div class="d-flex">
-                    <button type="submit" class="btn btn-success w-50 me-1">Сохранить</button>
-                    <button type="submit" class="btn btn-success w-50 disabled">Загрузить текст</button>
+                    <button type="submit" class="btn btn-success w-50 me-1" name="action"
+                        value="save">Сохранить</button>
+                    <input type="file" name="file" accept=".txt" class="d-none" id="fileInput">
+                    <label for="fileInput" class="btn btn-success w-50 mb-0" style="cursor: pointer;">Загрузить
+                        текст</label>
                 </div>
             </form>
         </div>
@@ -88,9 +91,9 @@
 <form action="/add_number" method="post">
     <label for="phone" class="form-label">📞 Добавить номер телефона:</label>
     <div class="input-group">
-    <span class="input-group-text">+7</span>
-    <input type="tel" name="phone" id="phone" class="form-control" placeholder="7011234567" required></label>
-    <button type="submit" class="btn btn-success">Добавить</button>
+        <span class="input-group-text">+7</span>
+        <input type="tel" name="phone" id="phone" class="form-control" placeholder="7011234567" required></label>
+        <button type="submit" class="btn btn-success">Добавить</button>
     </div>
 </form>
 

@@ -124,6 +124,12 @@ def upload():
 def text():
     logger.info("Пользователь задал текст сообщения")
     session["text_message"] = request.form.get("text") or ""
+    
+    uploaded_file = request.files.get("file")
+    if uploaded_file and uploaded_file.filename.endswith('.txt'):
+        file_content = uploaded_file.read().decode('utf-8')
+        session["text_message"] = file_content
+
     return utils.go_home_page("Текст сообщения сохранен")
 
 
