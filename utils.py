@@ -2,7 +2,7 @@ import os
 import random
 import requests
 from flask import url_for, redirect, current_app, session, g
-from database import get_all_users, add_user, update_status, add_image, delete_db_image, get_images_by_category, get_all_images, get_image_categories, delete_db_user
+from database import db
 from models import Contact, Image
 from collections import Counter
 
@@ -22,7 +22,7 @@ def file_processing(file):
     elif ext == "jpg":
         status = save_image(file)
     else:
-        return ext, "Unsupported file type."
+        return "Unsupported file type."
     return status
 
 
@@ -56,7 +56,7 @@ def save_images(file_content, file_name):
     added, skipped = 0, 0
     for link_image in file_content:
         image = Image(url=link_image.strip(), category=file_name)
-        if add_image(image):
+        if db.add_image(image):
             added += 1
         else:
             skipped += 1
@@ -68,7 +68,7 @@ def save_numbers(numbers):
 
     for phone_number in numbers:
         contact = Contact(phone=phone_number)
-        if add_user(contact):
+        if db.add_user(contact):
             added += 1
         else:
             skipped += 1
@@ -83,7 +83,7 @@ def read_image():
 
 
 def delete_image(url):
-    delete_db_image(url)
+    db.delete_image(url)
 
 
 def process_text_message(text_message, page):
@@ -120,8 +120,8 @@ def counter_statuses(contacts):
 
 
 def select_next_image(selected_category, current_url=None):
-    images = get_images_by_category(
-        selected_category) if selected_category else get_all_images()
+    images = db.get_images_by_category(
+        selected_category) if selected_category else db.get_all_images()
     if not images:
         return None
 
@@ -138,7 +138,7 @@ def select_next_image(selected_category, current_url=None):
 def update_image_length():
     selected_category = session.get("selected_category")
     if selected_category:
-        length = len(get_images_by_category(selected_category))
+        length = len(db.get_images_by_category(selected_category))
     else:
         length = 0
     return length
@@ -149,25 +149,25 @@ def init_session():
     session.setdefault("image_path", None)
     session["text_message"] = session.get("text_message", "")
     session["selected_category"] = session.get("selected_category", None)
-    g.data = get_all_users() or []
+    g.data = db.get_all_users() or []
     session["statuses"] = counter_statuses(g.data)
-    session["categories"] = get_image_categories()
+    session["categories"] = db.get_image_categories()
     session["length"] = update_image_length()
 
 
 def change_status(phone, status):
-    update_status(phone, status)
+    db.update_status(phone, status)
     session["statuses"] = counter_statuses(g.data)
 
 
 def delete_number(phone):
-    delete_db_user(phone)
+    db.delete_user(phone)
     session["statuses"] = counter_statuses(g.data)
 
 
 def add_number_to_db(phone):
     contact = Contact(phone=phone)
-    add_user(contact)
+    db.add_user(contact)
     session["statuses"] = counter_statuses(g.data)
 
 
@@ -179,6 +179,7 @@ def process_phone_number(phone):
     elif cleaned.startswith("8"):
         cleaned = cleaned[1:]
     return cleaned
+
 
 def go_home_page(message):
     return redirect(url_for('index', message=message))

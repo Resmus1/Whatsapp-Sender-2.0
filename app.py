@@ -6,11 +6,12 @@ from flask import Flask, render_template,  request, url_for, g, session
 from playwright.sync_api import sync_playwright
 
 from config import Config
-from database import get_all_users, reset_sent_statuses, get_image_categories
+from database import db
 
 from logger import logger
 from sender import open_whatsapp, send_message
 import utils
+
 
 app = Flask(__name__)
 app.config.from_object(Config)
@@ -24,16 +25,17 @@ def before_request():
     utils.init_session()
     logger.debug(f"Обработка запроса: {request.method} {request.path}")
 
+
 @atexit.register
 def on_exit():
-    reset_sent_statuses()
+    db.reset_sent_statuses()
 
 
 @app.route("/reset_statuses", methods=["GET"])
 def reset_statuses():
     logger.info("Сброс статусов пользователей")
-    reset_sent_statuses()
-    g.data = get_all_users()
+    db.reset_sent_statuses()
+    g.data = db.get_all_users()
     session["statuses"] = utils.counter_statuses(g.data)
     session.pop("text_message", None)
     session.pop("image_path", None)
@@ -48,7 +50,7 @@ def index():
     if message:
         logger.debug(f"[UI MESSAGE] {message}")
 
-    categories = get_image_categories()
+    categories = db.get_image_categories()
     selected_category = session.get('selected_category')
     current_image_url = session.get('current_image_url')
 
@@ -90,7 +92,7 @@ def start():
                         search_box, page
                     )
 
-            g.data = get_all_users()
+            g.data = db.get_all_users()
             if all(contact.status == "sent" for contact in g.data):
                 return utils.go_home_page("Все сообщения отправлены")
 
@@ -113,7 +115,7 @@ def upload():
     if not upload_file:
         logger.warning("Файл не был передан пользователем")
         return utils.go_home_page("Файл не выбран")
-    
+
     logger.info(f"Загрузка файла: {upload_file.filename}")
     status = utils.file_processing(upload_file)
 

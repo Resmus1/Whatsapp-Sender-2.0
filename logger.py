@@ -19,8 +19,12 @@ log_dir = "logs"
 os.makedirs(log_dir, exist_ok=True)
 
 file_handler = RotatingFileHandler(
-    os.path.join(log_dir, "app.log"), maxBytes=1_000_000, backupCount=3
+    os.path.join(log_dir, "app.log"), 
+    maxBytes=1_000_000,
+    backupCount=3,
+    encoding="utf-8",
 )
 file_handler.setLevel(logging.INFO)
 file_handler.setFormatter(formatter)
+
 logger.addHandler(file_handler)

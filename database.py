@@ -3,77 +3,73 @@ from models import Contact, Image
 import json
 from logger import logger
 
-db = TinyDB('database.json')
-contact_table = db.table('contacts')
-images_table = db.table('images')
 
-Contacts = Query()
-Images = Query()
+class Database:
+    def __init__(self, path="database.json"):
+        self.db = TinyDB(path)
+        self.contacts = self.db.table('contacts')
+        self.images = self.db.table('images')
+        self.Contacts = Query()
+        self.Images = Query()
 
+    # ===== Contact =====
 
-def add_user(user):
-    try:
-        if not contact_table.contains(Contacts.phone == user.phone):
-            contact_table.insert(user.to_dict())
-            logger.info(f"Добавлен контакт: {user.phone}")
-            return True
-    except Exception as e:
-        logger.exception((f"Ошибка при добавлении пользователя: {e}"))
-    return False
+    def add_user(self, user):
+        try:
+            if not self.contacts.contains(self.Contacts.phone == user.phone):
+                self.contacts.insert(user.to_dict())
+                logger.info(f"Добавлен контакт: {user.phone}")
+                return True
+        except Exception as e:
+            logger.exception((f"Ошибка при добавлении пользователя: {e}"))
+        return False
 
+    def get_all_users(self):
+        try:
+            return [Contact.from_dict(contact) for contact in self.contacts.all()]
+        except json.JSONDecodeError:
+            return []
 
-def add_image(image):
-    try:
-        if not images_table.contains(Images.url == image.url):
-            images_table.insert(image.to_dict())
-            logger.info(f"Добавлено изображение: {image.url}")
-            return True
-    except Exception as e:
-        logger.exception((f"Ошибка при добавлении изображения: {e}"))
-    return False
+    def delete_user(self, phone):
+        self.contacts.remove(self.Contacts.phone == phone)
 
+    def reset_sent_statuses(self):
+        self.contacts.update({'status': 'pending'},
+                             self.Contacts.status == 'sent')
 
-def delete_db_image(url):
-    images_table.remove(Images.url == url)
+    def update_status(self, phone, new_status):
+        self.contacts.update({'status': new_status},
+                             self.Contacts.phone == phone)
 
+    def update_name(self, phone, name):
+        self.contacts.update({'name': name}, self.Contacts.phone == phone)
 
-def get_all_users():
-    try:
-        contacts = contact_table.all()
-        return [Contact.from_dict(contact) for contact in contacts]
-    except json.JSONDecodeError:
-        return []
+    # ===== Images =====
 
+    def add_image(self, image):
+        try:
+            if not self.images.contains(self.Images.url == image.url):
+                self.images.insert(image.to_dict())
+                logger.info(f"Добавлено изображение: {image.url}")
+                return True
+        except Exception as e:
+            logger.exception((f"Ошибка при добавлении изображения: {e}"))
+        return False
 
-def delete_db_user(phone):
-    contact_table.remove(Contacts.phone == phone)
+    def delete_image(self, url):
+        self.images.remove(self.Images.url == url)
 
+    def get_all_images(self):
+        try:
+            return [Image.from_dict(i) for i in self.images.all()]
+        except json.JSONDecodeError:
+            return []
 
-def get_all_images():
-    try:
-        images = images_table.all()
-        return [Image.from_dict(image) for image in images]
-    except json.JSONDecodeError:
-        return []
+    def get_image_categories(self):
+        return list(set(image.category for image in self.get_all_images()))
 
-
-def get_image_categories():
-    images = get_all_images()
-    return list(set(image.category for image in images))
-
-
-def get_images_by_category(category):
-    images = get_all_images()
-    return [image for image in images if image.category == category]
-
-
-def reset_sent_statuses():
-    contact_table.update({'status': 'pending'}, Contacts.status == 'sent')
-
-
-def update_status(phone, new_status):
-    contact_table.update({'status': new_status}, Contacts.phone == phone)
+    def get_images_by_category(self, category):
+        return [image for image in self.get_all_images() if image.category == category]
 
 
-def update_name(phone, name):
-    contact_table.update({'name': name}, Contacts.phone == phone)
+db = Database()

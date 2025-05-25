@@ -1,5 +1,5 @@
 from playwright.sync_api import Playwright
-from database import update_name, update_status
+from database import db
 from utils import process_text_message
 
 
@@ -17,6 +17,7 @@ def open_whatsapp(playwright: Playwright):
     page.goto("https://web.whatsapp.com/")
     return page
 
+
 def send_message(contact, picture_path, text_message, search_box, page):
     search_box.click()
     search_box.fill(contact.phone)
@@ -26,10 +27,10 @@ def send_message(contact, picture_path, text_message, search_box, page):
         try:
             name = page.locator(
                 '//*[@id="main"]/header/div[2]/div/div/div/div/span').text_content()
-            update_name(contact.phone, name)
+            db.update_name(contact.phone, name)
         except Exception as e:
             print(f"Ошибка при получении имени контакта {contact.phone}: {e}")
-            update_status(contact.phone, "error")
+            db.update_status(contact.phone, "error")
             return False
 
     page.get_by_role("button", name="Прикрепить").click()
@@ -39,7 +40,7 @@ def send_message(contact, picture_path, text_message, search_box, page):
 
     # page.get_by_role("button", name="Отправить").click()
     page.wait_for_timeout(1000)
-    update_status(contact.phone, "sent")
+    db.update_status(contact.phone, "sent")
 
 
 def close_browser(playwright):
