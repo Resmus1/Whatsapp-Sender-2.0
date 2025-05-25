@@ -79,7 +79,11 @@ def save_numbers(numbers):
 def read_image():
     upload_folder = current_app.config["UPLOAD_FOLDER"]
     image_path = os.path.join(upload_folder, "picture.jpg")
-    return url_for("static", filename="uploads/picture.jpg") if os.path.exists(image_path) else None
+
+    if os.path.exists(image_path):
+        return url_for("static", filename="uploads/picture.jpg")
+    return None
+
 
 
 def delete_image(url):
@@ -145,8 +149,7 @@ def update_image_length():
 
 
 def init_session():
-    session.setdefault("image_directory_path", read_image())
-    session.setdefault("image_path", None)
+    session["image_directory_path"] = read_image()
     session["text_message"] = session.get("text_message", "")
     session["selected_category"] = session.get("selected_category", None)
     g.data = db.get_all_users() or []
